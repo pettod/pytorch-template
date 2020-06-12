@@ -1,8 +1,5 @@
 import torch
-import torchvision
-from torchvision import transforms, datasets
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
@@ -10,7 +7,7 @@ import glob
 import numpy as np
 import os
 import time
-from tqdm import tqdm, trange
+from tqdm import trange
 
 # Project files
 from callbacks import EarlyStopping
@@ -19,32 +16,34 @@ from image_data_generator_2 import ImageDataGenerator
 
 
 # Data paths
-TRAIN_X_DIR = ""
-TRAIN_Y_DIR = ""
-VALID_X_DIR = ""
-VALID_Y_DIR = ""
+ROOT = os.path.realpath("")
+TRAIN_X_DIR = os.path.join(ROOT, "")
+TRAIN_Y_DIR = os.path.join(ROOT, "")
+VALID_X_DIR = os.path.join(ROOT, "")
+VALID_Y_DIR = os.path.join(ROOT, "")
 
 # Model parameters
 LOAD_MODEL = False
 MODEL_PATH = None
 BATCH_SIZE = 16
 PATCH_SIZE = 256
-PATCHES_PER_IMAGE = 1
-EPOCHS = 1000
 PATIENCE = 10
 LEARNING_RATE = 1e-4
 
-PROGRAM_TIME_STAMP = time.strftime("%Y-%m-%d_%H%M%S")
-
 
 class Train():
-    def __init__(self, device, loss_function):
-        self.device = device
-        self.loss_function = loss_function
+    def __init__(self):
+        # Device
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu")
+        if not torch.cuda.is_available():
+            print("WARNING: Running on CPU\n\n\n\n")
+
+        # Model details
         self.model_root = "models"
         self.model = self.loadModel()
         save_model_directory = os.path.join(
-            self.model_root, PROGRAM_TIME_STAMP)
+            self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
         self.early_stopping = EarlyStopping(save_model_directory, PATIENCE)
 
         # Define optimizer
@@ -56,19 +55,19 @@ class Train():
         train_data_generator = ImageDataGenerator()
         self.train_batch_generator = \
             train_data_generator.trainAndGtBatchGenerator(
-                TRAIN_X_DIR, TRAIN_Y_DIR, BATCH_SIZE, PATCHES_PER_IMAGE,
+                TRAIN_X_DIR, TRAIN_Y_DIR, BATCH_SIZE,
                 PATCH_SIZE, normalize=True)
         self.number_of_train_batches = \
             train_data_generator.numberOfBatchesPerEpoch(
-                TRAIN_X_DIR, BATCH_SIZE, PATCHES_PER_IMAGE)
+                TRAIN_X_DIR, BATCH_SIZE)
         valid_data_generator = ImageDataGenerator()
         self.valid_batch_generator = \
             valid_data_generator.trainAndGtBatchGenerator(
-                VALID_X_DIR, VALID_Y_DIR, BATCH_SIZE, PATCHES_PER_IMAGE,
+                VALID_X_DIR, VALID_Y_DIR, BATCH_SIZE,
                 PATCH_SIZE, normalize=True)
         self.number_of_valid_batches = \
             valid_data_generator.numberOfBatchesPerEpoch(
-                VALID_X_DIR, BATCH_SIZE, PATCHES_PER_IMAGE)
+                VALID_X_DIR, BATCH_SIZE)
 
     def loadModel(self):
         if LOAD_MODEL:
@@ -78,9 +77,13 @@ class Train():
                 model_name = sorted(glob.glob(os.path.join(
                     self.model_root, *['*', "*.pt"])))[-1]
             else:
+
+                # Load model based on index
                 if type(MODEL_PATH) == int:
                     model_name = sorted(glob.glob(os.path.join(
                         self.model_root, *['*', "*.pt"])))[MODEL_PATH]
+
+                # Load defined model path
                 else:
                     model_name = MODEL_PATH
             model = nn.DataParallel(Net()).to(self.device)
@@ -93,6 +96,9 @@ class Train():
             sum(p.numel() for p in model.parameters() if p.requires_grad)))
         return model
 
+    def lossFunction(self, y_pred, y_true):
+        return torch.mean(y_pred - y_true)
+
     def runValidationData(self):
         loss_value = 0
 
@@ -102,7 +108,7 @@ class Train():
             X = torch.from_numpy(np.moveaxis(X, -1, 1)).to(self.device)
             y = torch.from_numpy(np.moveaxis(y, -1, 1)).to(self.device)
             output = self.model(X)
-            loss = self.loss_function(y, output)
+            loss = self.lossFunction(y, output)
             loss_value += (loss - loss_value) / (i+1)
         print(
             "\n Validation loss: {:9.7f}".format(loss_value))
@@ -111,13 +117,14 @@ class Train():
 
     def train(self):
         # Run epochs
-        for epoch in range(EPOCHS):
+        epochs = 1000
+        for epoch in range(epochs):
             if self.early_stopping.isEarlyStop():
                 print("Early stop")
                 break
             progress_bar = trange(self.number_of_train_batches, leave=True)
             progress_bar.set_description(
-                " Epoch {}/{}".format(epoch+1, EPOCHS))
+                " Epoch {}/{}".format(epoch+1, epochs))
             loss_value = 0
 
             # Run batches
@@ -136,7 +143,7 @@ class Train():
                 # Feed forward and backpropagation
                 self.model.zero_grad()
                 output = self.model(X)
-                loss = self.loss_function(y, output)
+                loss = self.lossFunction(output, y)
                 loss.backward()
                 self.optimizer.step()
 
@@ -148,11 +155,7 @@ class Train():
 
 
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if not torch.cuda.is_available():
-        print("WARNING: Running on CPU\n\n\n\n")
-
-    train = Train(device, nn.L1Loss)
+    train = Train()
     train.train()
 
 
