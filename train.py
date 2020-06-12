@@ -10,9 +10,11 @@ import time
 from tqdm import trange
 
 # Project files
-from callbacks import EarlyStopping
+from callbacks import CsvLogger, EarlyStopping
 from network import Net
 from image_data_generator_2 import ImageDataGenerator
+from utils import \
+    getMetrics, getEmptyEpochMetrics, updateEpochMetrics, getProgressbarText
 
 
 # Data paths
@@ -33,23 +35,26 @@ LEARNING_RATE = 1e-4
 
 class Train():
     def __init__(self):
-        # Device
+        # Device (CPU / CUDA)
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
         if not torch.cuda.is_available():
             print("WARNING: Running on CPU\n\n\n\n")
 
-        # Model details
-        self.model_root = "models"
+        # Model details and read metrics
+        self.model_root = "saved_models"
         self.model = self.loadModel()
         save_model_directory = os.path.join(
             self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
-        self.early_stopping = EarlyStopping(save_model_directory, PATIENCE)
+        self.metrics = getMetrics()
 
-        # Define optimizer
+        # Define optimizer and callbacks
         self.optimizer = optim.Adam(self.model.parameters(), lr=LEARNING_RATE)
         self.scheduler = ReduceLROnPlateau(
             self.optimizer, "min", 0.3, 3, min_lr=1e-8)
+        self.csv_logger = CsvLogger(save_model_directory)
+        self.early_stopping = EarlyStopping(save_model_directory, PATIENCE)
+        self.epoch_metrics = getEmptyEpochMetrics()
 
         # Define train and validation batch generators
         train_data_generator = ImageDataGenerator()
@@ -99,21 +104,24 @@ class Train():
     def lossFunction(self, y_pred, y_true):
         return torch.mean(y_pred - y_true)
 
-    def runValidationData(self):
-        loss_value = 0
-
+    def validationRound(self):
         # Load tensor batch
         for i in range(self.number_of_valid_batches):
             X, y = next(self.valid_batch_generator)
-            X = torch.from_numpy(np.moveaxis(X, -1, 1)).to(self.device)
-            y = torch.from_numpy(np.moveaxis(y, -1, 1)).to(self.device)
+            X = torch.from_numpy(np.moveaxis(X, -1, -3)).to(self.device)
+            y = torch.from_numpy(np.moveaxis(y, -1, -3)).to(self.device)
             output = self.model(X)
             loss = self.lossFunction(y, output)
-            loss_value += (loss - loss_value) / (i+1)
-        print(
-            "\n Validation loss: {:9.7f}".format(loss_value))
-        self.early_stopping.__call__(loss_value.item(), self.model)
-        self.scheduler.step(loss_value)
+            self.epoch_metrics["valid_loss"] += (
+                loss.item() - self.epoch_metrics["valid_loss"]) / (i+1)
+            updateEpochMetrics(
+                output, y, i, self.epoch_metrics, "valid")
+        validation_loss = self.epoch_metrics["valid_loss"]
+        print("\n\n{}".format(getProgressbarText(
+            self.epoch_metrics, "Valid")))
+        self.csv_logger.__call__(self.epoch_metrics)
+        self.early_stopping.__call__(validation_loss, self.model)
+        self.scheduler.step(validation_loss)
 
     def train(self):
         # Run epochs
@@ -125,7 +133,7 @@ class Train():
             progress_bar = trange(self.number_of_train_batches, leave=True)
             progress_bar.set_description(
                 " Epoch {}/{}".format(epoch+1, epochs))
-            loss_value = 0
+            self.epoch_metrics = getEmptyEpochMetrics()
 
             # Run batches
             for i in progress_bar:
@@ -133,12 +141,12 @@ class Train():
                 # Run validation data before last batch
                 if i == self.number_of_train_batches - 1:
                     with torch.no_grad():
-                        self.runValidationData()
+                        self.validationRound()
 
                 # Load tensor batch
                 X, y = next(self.train_batch_generator)
-                X = torch.from_numpy(np.moveaxis(X, -1, 1)).to(self.device)
-                y = torch.from_numpy(np.moveaxis(y, -1, 1)).to(self.device)
+                X = torch.from_numpy(np.moveaxis(X, -1, -3)).to(self.device)
+                y = torch.from_numpy(np.moveaxis(y, -1, -3)).to(self.device)
 
                 # Feed forward and backpropagation
                 self.model.zero_grad()
@@ -149,9 +157,12 @@ class Train():
 
                 # Compute metrics
                 with torch.no_grad():
-                    loss_value += (loss - loss_value) / (i+1)
+                    self.epoch_metrics["train_loss"] += (
+                        loss.item() - self.epoch_metrics["train_loss"]) / (i+1)
+                    updateEpochMetrics(
+                        output, y, i, self.epoch_metrics, "train")
                     progress_bar.display(
-                        " Loss: {:9.7f}".format(loss_value), 1)
+                        getProgressbarText(self.epoch_metrics, "Train"), 1)
 
 
 def main():
