@@ -24,7 +24,7 @@ Things needed to be changed in a new project:
 
 1. `train.py`: Change hyperparameters, data paths, loss function, and data transforms.
 
-1. `dataset.py`: Define [PyTorch dataset](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html) which handles batch indices. Just inherit `Dataset`, and implement `__len__` and `__get__` member functions.
+1. `dataset.py`: Define [PyTorch dataset](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html) which returns single sample with given sample index. Just inherit `Dataset`, and implement `__len__` and `__getitem__` member functions.
 
 1. `network.py`: Add model structure.
 
