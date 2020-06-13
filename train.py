@@ -110,9 +110,9 @@ class Train():
 
     def validationRound(self):
         # Load tensor batch
-        for i, (X, y) in zip(range(self.number_of_valid_batches), self.valid_dataloader):
-            X = X.to(self.device)
-            y = y.to(self.device)
+        for i, (X, y) in zip(
+                range(self.number_of_valid_batches), self.valid_dataloader):
+            X, y = X.to(self.device), y.to(self.device)
             output = self.model(X)
             loss = self.lossFunction(output, y)
             self.epoch_metrics["valid_loss"] += (
@@ -148,11 +148,8 @@ class Train():
                     with torch.no_grad():
                         self.validationRound()
 
-                # Load tensor batch
-                X = X.to(self.device)
-                y = y.to(self.device)
-
                 # Feed forward and backpropagation
+                X, y = X.to(self.device), y.to(self.device)
                 self.model.zero_grad()
                 output = self.model(X)
                 loss = self.lossFunction(output, y)

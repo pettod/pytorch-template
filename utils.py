@@ -105,7 +105,7 @@ def plotLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
         plt.plot(range(number_of_rows), log_data[key], label=key)
         plt.xticks(range(number_of_rows), epoch_string_data)
         plt.xlabel("Epoch")
-        plt.title(metric.title())
+        plt.title(metric.upper())
         plt.legend()
     plt.tight_layout()
     plt.savefig("{}.{}".format(log_file_path.split('.')[0], "png"))
