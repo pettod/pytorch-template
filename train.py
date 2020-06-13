@@ -2,8 +2,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.utils.data import DataLoader
+from torchvision import transforms
 
 import glob
+import math
 import numpy as np
 import os
 import time
@@ -12,18 +15,18 @@ from tqdm import trange
 # Project files
 from callbacks import CsvLogger, EarlyStopping
 from network import Net
-from image_data_generator_2 import ImageDataGenerator
+from dataset import ImageDataset
 from utils import \
     getMetrics, getEmptyEpochMetrics, updateEpochMetrics, getProgressbarText, \
     plotLearningCurve
 
 
 # Data paths
-ROOT = os.path.realpath("")
-TRAIN_X_DIR = os.path.join(ROOT, "")
-TRAIN_Y_DIR = os.path.join(ROOT, "")
-VALID_X_DIR = os.path.join(ROOT, "")
-VALID_Y_DIR = os.path.join(ROOT, "")
+DATA_ROOT = os.path.realpath("../../REDS")
+TRAIN_X_DIR = os.path.join(DATA_ROOT, "train_blur/")
+TRAIN_Y_DIR = os.path.join(DATA_ROOT, "train_sharp/")
+VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
+VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
 
 # Model parameters
 LOAD_MODEL = False
@@ -35,7 +38,7 @@ LEARNING_RATE = 1e-4
 
 
 class Train():
-    def __init__(self):
+    def __init__(self, data_transforms, drop_last_batch=False):
         # Device (CPU / CUDA)
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
@@ -58,22 +61,22 @@ class Train():
         self.epoch_metrics = getEmptyEpochMetrics()
 
         # Define train and validation batch generators
-        train_data_generator = ImageDataGenerator()
-        self.train_batch_generator = \
-            train_data_generator.trainAndGtBatchGenerator(
-                TRAIN_X_DIR, TRAIN_Y_DIR, BATCH_SIZE,
-                PATCH_SIZE, normalize=True)
-        self.number_of_train_batches = 3; a=\
-            train_data_generator.numberOfBatchesPerEpoch(
-                TRAIN_X_DIR, BATCH_SIZE)
-        valid_data_generator = ImageDataGenerator()
-        self.valid_batch_generator = \
-            valid_data_generator.trainAndGtBatchGenerator(
-                VALID_X_DIR, VALID_Y_DIR, BATCH_SIZE,
-                PATCH_SIZE, normalize=True)
-        self.number_of_valid_batches = 3; a=\
-            valid_data_generator.numberOfBatchesPerEpoch(
-                VALID_X_DIR, BATCH_SIZE)
+        train_dataset = ImageDataset(TRAIN_X_DIR, TRAIN_Y_DIR, data_transforms)
+        valid_dataset = ImageDataset(VALID_X_DIR, VALID_Y_DIR, data_transforms)
+        self.train_dataloader = DataLoader(
+            train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=1,
+            drop_last=drop_last_batch)
+        self.valid_dataloader = DataLoader(
+            valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=1,
+            drop_last=drop_last_batch)
+        self.number_of_train_batches = len(train_dataset) / BATCH_SIZE
+        self.number_of_valid_batches = len(valid_dataset) / BATCH_SIZE
+        if drop_last_batch:
+            self.number_of_train_batches = int(self.number_of_train_batches)
+            self.number_of_valid_batches = int(self.number_of_valid_batches)
+        else:
+            self.number_of_train_batches = math.ceil(self.number_of_train_batches)
+            self.number_of_valid_batches = math.ceil(self.number_of_valid_batches)
 
     def loadModel(self):
         if LOAD_MODEL:
@@ -107,10 +110,9 @@ class Train():
 
     def validationRound(self):
         # Load tensor batch
-        for i in range(self.number_of_valid_batches):
-            X, y = next(self.valid_batch_generator)
-            X = torch.from_numpy(np.moveaxis(X, -1, -3)).to(self.device)
-            y = torch.from_numpy(np.moveaxis(y, -1, -3)).to(self.device)
+        for i, (X, y) in zip(range(self.number_of_valid_batches), self.valid_dataloader):
+            X = X.to(self.device)
+            y = y.to(self.device)
             output = self.model(X)
             loss = self.lossFunction(output, y)
             self.epoch_metrics["valid_loss"] += (
@@ -139,7 +141,7 @@ class Train():
             self.epoch_metrics["epoch"] = epoch
 
             # Run batches
-            for i in progress_bar:
+            for i, (X, y) in zip(progress_bar, self.train_dataloader):
 
                 # Run validation data before last batch
                 if i == self.number_of_train_batches - 1:
@@ -147,9 +149,8 @@ class Train():
                         self.validationRound()
 
                 # Load tensor batch
-                X, y = next(self.train_batch_generator)
-                X = torch.from_numpy(np.moveaxis(X, -1, -3)).to(self.device)
-                y = torch.from_numpy(np.moveaxis(y, -1, -3)).to(self.device)
+                X = X.to(self.device)
+                y = y.to(self.device)
 
                 # Feed forward and backpropagation
                 self.model.zero_grad()
@@ -169,7 +170,13 @@ class Train():
 
 
 def main():
-    train = Train()
+    data_transforms = transforms.Compose([
+        transforms.RandomCrop(PATCH_SIZE),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.ToTensor()
+    ])
+    train = Train(data_transforms)
     train.train()
 
 
