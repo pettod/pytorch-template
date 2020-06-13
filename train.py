@@ -14,7 +14,8 @@ from callbacks import CsvLogger, EarlyStopping
 from network import Net
 from image_data_generator_2 import ImageDataGenerator
 from utils import \
-    getMetrics, getEmptyEpochMetrics, updateEpochMetrics, getProgressbarText
+    getMetrics, getEmptyEpochMetrics, updateEpochMetrics, getProgressbarText, \
+    plotLearningCurve
 
 
 # Data paths
@@ -62,7 +63,7 @@ class Train():
             train_data_generator.trainAndGtBatchGenerator(
                 TRAIN_X_DIR, TRAIN_Y_DIR, BATCH_SIZE,
                 PATCH_SIZE, normalize=True)
-        self.number_of_train_batches = \
+        self.number_of_train_batches = 3; a=\
             train_data_generator.numberOfBatchesPerEpoch(
                 TRAIN_X_DIR, BATCH_SIZE)
         valid_data_generator = ImageDataGenerator()
@@ -70,7 +71,7 @@ class Train():
             valid_data_generator.trainAndGtBatchGenerator(
                 VALID_X_DIR, VALID_Y_DIR, BATCH_SIZE,
                 PATCH_SIZE, normalize=True)
-        self.number_of_valid_batches = \
+        self.number_of_valid_batches = 3; a=\
             valid_data_generator.numberOfBatchesPerEpoch(
                 VALID_X_DIR, BATCH_SIZE)
 
@@ -111,7 +112,7 @@ class Train():
             X = torch.from_numpy(np.moveaxis(X, -1, -3)).to(self.device)
             y = torch.from_numpy(np.moveaxis(y, -1, -3)).to(self.device)
             output = self.model(X)
-            loss = self.lossFunction(y, output)
+            loss = self.lossFunction(output, y)
             self.epoch_metrics["valid_loss"] += (
                 loss.item() - self.epoch_metrics["valid_loss"]) / (i+1)
             updateEpochMetrics(
@@ -122,18 +123,20 @@ class Train():
         self.csv_logger.__call__(self.epoch_metrics)
         self.early_stopping.__call__(validation_loss, self.model)
         self.scheduler.step(validation_loss)
+        plotLearningCurve(model_root=self.model_root)
 
     def train(self):
         # Run epochs
         epochs = 1000
-        for epoch in range(epochs):
+        for epoch in range(1, epochs+1):
             if self.early_stopping.isEarlyStop():
                 print("Early stop")
                 break
             progress_bar = trange(self.number_of_train_batches, leave=True)
             progress_bar.set_description(
-                " Epoch {}/{}".format(epoch+1, epochs))
+                " Epoch {}/{}".format(epoch, epochs))
             self.epoch_metrics = getEmptyEpochMetrics()
+            self.epoch_metrics["epoch"] = epoch
 
             # Run batches
             for i in progress_bar:
