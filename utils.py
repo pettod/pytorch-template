@@ -12,7 +12,8 @@ import metrics
 
 def getMetrics():
     metrics_name_and_function_pointers = [
-        metric for metric in getmembers(metrics) if isfunction(metric[1])]
+        metric for metric in getmembers(metrics, isfunction)
+        if metric[1].__module__ == metrics.__name__]
     return metrics_name_and_function_pointers
 
 
