@@ -16,7 +16,7 @@ from callbacks import CsvLogger, EarlyStopping
 from network import Net
 from utils import \
     getMetrics, getEmptyEpochMetrics, updateEpochMetrics, getProgressbarText, \
-    plotLearningCurve
+    saveLearningCurve
 
 
 class Learner():
@@ -107,7 +107,7 @@ class Learner():
         self.csv_logger.__call__(self.epoch_metrics)
         self.early_stopping.__call__(validation_loss, self.model)
         self.scheduler.step(validation_loss)
-        plotLearningCurve(model_root=self.model_root)
+        saveLearningCurve(model_root=self.model_root)
 
     def train(self):
         # Run epochs

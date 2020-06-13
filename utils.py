@@ -57,7 +57,7 @@ def getProgressbarText(epoch_metrics, mode):
     return text
 
 
-def plotLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
+def saveLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
     # Read CSV log file
     if log_file_path is None:
         log_file_path = sorted(glob.glob(os.path.join(
@@ -95,7 +95,7 @@ def plotLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
             figure_dict[metric] = len(figure_dict.keys()) + 1
     number_of_subplots = len(figure_dict.keys())
 
-    # Plot learning curves
+    # Save learning curves plot
     plt.figure(figsize=(15, 7))
     import warnings
     warnings.filterwarnings("ignore")
