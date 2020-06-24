@@ -28,9 +28,10 @@ def computeMetrics(y_pred, y_true):
     return metric_scores
 
 
-def getEmptyEpochMetrics():
+def initializeEpochMetrics(epoch):
     metric_functions = getMetrics()
     epoch_metrics = {}
+    epoch_metrics["epoch"] = epoch
     epoch_metrics["train_loss"] = 0
     epoch_metrics["valid_loss"] = 0
     for metric_name, _ in metric_functions:
@@ -40,8 +41,9 @@ def getEmptyEpochMetrics():
 
 
 def updateEpochMetrics(
-        y_pred, y_true, epoch_iteration_index, epoch_metrics, mode):
+        y_pred, y_true, loss, epoch_iteration_index, epoch_metrics, mode):
     metric_scores = computeMetrics(y_pred, y_true)
+    metric_scores["loss"] = loss
     for key, value in metric_scores.items():
         if type(value) == torch.Tensor:
             value = value.item()
@@ -141,12 +143,3 @@ def loadModel(model_root, load_pretrained_weights=False, model_path=None):
     print("{:,} model parameters".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
     return model
-
-
-def numberOfDatasetBatches(dataset, batch_size, drop_last_batch=False):
-    number_of_dataset_batches = len(dataset) / batch_size
-    if drop_last_batch:
-        number_of_dataset_batches = int(number_of_dataset_batches)
-    else:
-        number_of_dataset_batches = ceil(number_of_dataset_batches)
-    return number_of_dataset_batches

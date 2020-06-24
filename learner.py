@@ -11,8 +11,8 @@ from tqdm import trange
 # Project files
 from callbacks import CsvLogger, EarlyStopping
 from utils import \
-    getMetrics, getEmptyEpochMetrics, updateEpochMetrics, getProgressbarText, \
-    saveLearningCurve, loadModel, numberOfDatasetBatches
+    getMetrics, initializeEpochMetrics, updateEpochMetrics, \
+    getProgressbarText, saveLearningCurve, loadModel
 
 
 class Learner():
@@ -42,7 +42,7 @@ class Learner():
             self.optimizer, "min", 0.3, 3, min_lr=1e-8)
         self.csv_logger = CsvLogger(save_model_directory)
         self.early_stopping = EarlyStopping(save_model_directory, patience)
-        self.epoch_metrics = getEmptyEpochMetrics()
+        self.epoch_metrics = {}
 
         # Define train and validation batch generators
         self.train_dataloader = DataLoader(
@@ -51,10 +51,8 @@ class Learner():
         self.valid_dataloader = DataLoader(
             valid_dataset, batch_size=batch_size, shuffle=False,
             num_workers=num_workers, drop_last=drop_last_batch)
-        self.number_of_train_batches = numberOfDatasetBatches(
-            train_dataset, batch_size, drop_last_batch)
-        self.number_of_valid_batches = numberOfDatasetBatches(
-            valid_dataset, batch_size, drop_last_batch)
+        self.number_of_train_batches = len(self.train_dataloader)
+        self.number_of_valid_batches = len(self.valid_dataloader)
 
     def validationEpoch(self):
         # Load tensor batch
@@ -63,13 +61,13 @@ class Learner():
             X, y = X.to(self.device), y.to(self.device)
             output = self.model(X)
             loss = self.loss_function(output, y)
-            self.epoch_metrics["valid_loss"] += (
-                loss.item() - self.epoch_metrics["valid_loss"]) / (i+1)
             updateEpochMetrics(
-                output, y, i, self.epoch_metrics, "valid")
-        validation_loss = self.epoch_metrics["valid_loss"]
+                output, y, loss, i, self.epoch_metrics, "valid")
+
+        # Logging
         print("\n\n{}".format(getProgressbarText(self.epoch_metrics, "Valid")))
         self.csv_logger.__call__(self.epoch_metrics)
+        validation_loss = self.epoch_metrics["valid_loss"]
         self.early_stopping.__call__(validation_loss, self.model)
         self.scheduler.step(validation_loss)
         saveLearningCurve(model_root=self.model_root)
@@ -83,8 +81,7 @@ class Learner():
                 break
             progress_bar = trange(self.number_of_train_batches, leave=True)
             progress_bar.set_description(" Epoch {}/{}".format(epoch, epochs))
-            self.epoch_metrics = getEmptyEpochMetrics()
-            self.epoch_metrics["epoch"] = epoch
+            self.epoch_metrics = initializeEpochMetrics(epoch)
 
             # Run batches
             for i, (X, y) in zip(progress_bar, self.train_dataloader):
@@ -104,9 +101,7 @@ class Learner():
 
                 # Compute metrics
                 with torch.no_grad():
-                    self.epoch_metrics["train_loss"] += (
-                        loss.item() - self.epoch_metrics["train_loss"]) / (i+1)
                     updateEpochMetrics(
-                        output, y, i, self.epoch_metrics, "train")
+                        output, y, loss, i, self.epoch_metrics, "train")
                     progress_bar.display(
                         getProgressbarText(self.epoch_metrics, "Train"), 1)
