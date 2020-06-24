@@ -6,6 +6,7 @@ import os
 import pandas as pd
 import torch
 import torch.nn as nn
+from math import ceil
 
 # Project files
 import metrics
@@ -140,3 +141,12 @@ def loadModel(model_root, load_pretrained_weights=False, model_path=None):
     print("{:,} model parameters".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
     return model
+
+
+def numberOfDatasetBatches(dataset, batch_size, drop_last_batch=False):
+    number_of_dataset_batches = len(dataset) / batch_size
+    if drop_last_batch:
+        number_of_dataset_batches = int(number_of_dataset_batches)
+    else:
+        number_of_dataset_batches = ceil(number_of_dataset_batches)
+    return number_of_dataset_batches

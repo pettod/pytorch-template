@@ -4,9 +4,6 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
-import glob
-from math import ceil
-import numpy as np
 import os
 import time
 from tqdm import trange
@@ -15,7 +12,7 @@ from tqdm import trange
 from callbacks import CsvLogger, EarlyStopping
 from utils import \
     getMetrics, getEmptyEpochMetrics, updateEpochMetrics, getProgressbarText, \
-    saveLearningCurve, loadModel
+    saveLearningCurve, loadModel, numberOfDatasetBatches
 
 
 class Learner():
@@ -30,14 +27,13 @@ class Learner():
         if not torch.cuda.is_available():
             print("WARNING: Running on CPU\n\n\n\n")
 
-        # Model details and read metrics
+        # Model details
         self.model_root = "saved_models"
         self.model = loadModel(
             self.model_root, load_pretrained_weights, model_path
             ).to(self.device)
         save_model_directory = os.path.join(
             self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
-        self.metrics = getMetrics()
 
         # Define optimizer and callbacks
         self.loss_function = loss_function
@@ -55,14 +51,10 @@ class Learner():
         self.valid_dataloader = DataLoader(
             valid_dataset, batch_size=batch_size, shuffle=False,
             num_workers=num_workers, drop_last=drop_last_batch)
-        self.number_of_train_batches = len(train_dataset) / batch_size
-        self.number_of_valid_batches = len(valid_dataset) / batch_size
-        if drop_last_batch:
-            self.number_of_train_batches = int(self.number_of_train_batches)
-            self.number_of_valid_batches = int(self.number_of_valid_batches)
-        else:
-            self.number_of_train_batches = ceil(self.number_of_train_batches)
-            self.number_of_valid_batches = ceil(self.number_of_valid_batches)
+        self.number_of_train_batches = numberOfDatasetBatches(
+            train_dataset, batch_size, drop_last_batch)
+        self.number_of_valid_batches = numberOfDatasetBatches(
+            valid_dataset, batch_size, drop_last_batch)
 
     def validationEpoch(self):
         # Load tensor batch
@@ -76,8 +68,7 @@ class Learner():
             updateEpochMetrics(
                 output, y, i, self.epoch_metrics, "valid")
         validation_loss = self.epoch_metrics["valid_loss"]
-        print("\n\n{}".format(getProgressbarText(
-            self.epoch_metrics, "Valid")))
+        print("\n\n{}".format(getProgressbarText(self.epoch_metrics, "Valid")))
         self.csv_logger.__call__(self.epoch_metrics)
         self.early_stopping.__call__(validation_loss, self.model)
         self.scheduler.step(validation_loss)
@@ -91,8 +82,7 @@ class Learner():
                 print("Early stop")
                 break
             progress_bar = trange(self.number_of_train_batches, leave=True)
-            progress_bar.set_description(
-                " Epoch {}/{}".format(epoch, epochs))
+            progress_bar.set_description(" Epoch {}/{}".format(epoch, epochs))
             self.epoch_metrics = getEmptyEpochMetrics()
             self.epoch_metrics["epoch"] = epoch
 
