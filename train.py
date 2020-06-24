@@ -15,13 +15,14 @@ VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
 VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
 
 # Model parameters
-LOAD_MODEL = False
+LOAD_MODEL = True
 MODEL_PATH = None
 BATCH_SIZE = 16
 PATCH_SIZE = 256
 PATIENCE = 10
 LEARNING_RATE = 1e-4
 DROP_LAST_BATCH = False
+NUMBER_OF_DATALOADER_WORKERS = 8
 
 
 def lossFunction(y_pred, y_true):
@@ -39,8 +40,8 @@ def main():
     valid_dataset = ImageDataset(VALID_X_DIR, VALID_Y_DIR, data_transforms)
     learner = Learner(
         train_dataset, valid_dataset, data_transforms, BATCH_SIZE,
-        LEARNING_RATE, lossFunction, PATIENCE, LOAD_MODEL, MODEL_PATH,
-        DROP_LAST_BATCH)
+        LEARNING_RATE, lossFunction, PATIENCE, NUMBER_OF_DATALOADER_WORKERS,
+        LOAD_MODEL, MODEL_PATH, DROP_LAST_BATCH)
     learner.train()
 
 
