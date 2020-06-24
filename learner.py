@@ -55,9 +55,12 @@ class Learner():
         self.number_of_valid_batches = len(self.valid_dataloader)
 
     def validationEpoch(self):
-        # Load tensor batch
-        for i, (X, y) in zip(
-                range(self.number_of_valid_batches), self.valid_dataloader):
+        print()
+        progress_bar = trange(self.number_of_valid_batches, leave=False)
+        progress_bar.set_description(" Validation")
+
+        # Run batches
+        for i, (X, y) in zip(progress_bar, self.valid_dataloader):
             X, y = X.to(self.device), y.to(self.device)
             output = self.model(X)
             loss = self.loss_function(output, y)
@@ -65,7 +68,7 @@ class Learner():
                 output, y, loss, i, self.epoch_metrics, "valid")
 
         # Logging
-        print("\n\n{}".format(getProgressbarText(self.epoch_metrics, "Valid")))
+        print("\n{}".format(getProgressbarText(self.epoch_metrics, "Valid")))
         self.csv_logger.__call__(self.epoch_metrics)
         validation_loss = self.epoch_metrics["valid_loss"]
         self.early_stopping.__call__(validation_loss, self.model)
@@ -79,8 +82,8 @@ class Learner():
             if self.early_stopping.isEarlyStop():
                 print("Early stop")
                 break
-            progress_bar = trange(self.number_of_train_batches, leave=True)
-            progress_bar.set_description(" Epoch {}/{}".format(epoch, epochs))
+            progress_bar = trange(self.number_of_train_batches, leave=False)
+            progress_bar.set_description(f" Epoch {epoch}/{epochs}")
             self.epoch_metrics = initializeEpochMetrics(epoch)
 
             # Run batches
