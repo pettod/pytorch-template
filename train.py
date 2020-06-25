@@ -26,22 +26,26 @@ NUMBER_OF_DATALOADER_WORKERS = 8
 
 
 def lossFunction(y_pred, y_true):
-    return torch.mean(y_pred - y_true)
+    return torch.mean(torch.abs(y_pred - y_true))
 
 
 def main():
-    data_transforms = transforms.Compose([
+    train_transforms = transforms.Compose([
         transforms.RandomCrop(PATCH_SIZE),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.ToTensor()
     ])
-    train_dataset = ImageDataset(TRAIN_X_DIR, TRAIN_Y_DIR, data_transforms)
-    valid_dataset = ImageDataset(VALID_X_DIR, VALID_Y_DIR, data_transforms)
+    valid_transforms = transforms.Compose([
+        transforms.CenterCrop(PATCH_SIZE),
+        transforms.ToTensor()
+    ])
+    train_dataset = ImageDataset(TRAIN_X_DIR, TRAIN_Y_DIR, train_transforms)
+    valid_dataset = ImageDataset(VALID_X_DIR, VALID_Y_DIR, valid_transforms)
     learner = Learner(
-        train_dataset, valid_dataset, data_transforms, BATCH_SIZE,
-        LEARNING_RATE, lossFunction, PATIENCE, NUMBER_OF_DATALOADER_WORKERS,
-        LOAD_MODEL, MODEL_PATH, DROP_LAST_BATCH)
+        train_dataset, valid_dataset, BATCH_SIZE, LEARNING_RATE, lossFunction,
+        PATIENCE, NUMBER_OF_DATALOADER_WORKERS, LOAD_MODEL, MODEL_PATH,
+        DROP_LAST_BATCH)
     learner.train()
 
 

@@ -11,14 +11,14 @@ from tqdm import trange
 # Project files
 from callbacks import CsvLogger, EarlyStopping
 from utils import \
-    getMetrics, initializeEpochMetrics, updateEpochMetrics, \
-    getProgressbarText, saveLearningCurve, loadModel
+    initializeEpochMetrics, updateEpochMetrics, getProgressbarText, \
+    saveLearningCurve, loadModel
 
 
 class Learner():
     def __init__(
-            self, train_dataset, valid_dataset, data_transforms, batch_size,
-            learning_rate, loss_function, patience, num_workers=1,
+            self, train_dataset, valid_dataset, batch_size, learning_rate,
+            loss_function, patience, num_workers=1,
             load_pretrained_weights=False, model_path=None,
             drop_last_batch=False):
         # Device (CPU / CUDA)
@@ -39,7 +39,7 @@ class Learner():
         self.loss_function = loss_function
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.scheduler = ReduceLROnPlateau(
-            self.optimizer, "min", 0.3, 3, min_lr=1e-8)
+            self.optimizer, "min", 0.3, patience//3, min_lr=1e-8)
         self.csv_logger = CsvLogger(save_model_directory)
         self.early_stopping = EarlyStopping(save_model_directory, patience)
         self.epoch_metrics = {}
@@ -89,7 +89,7 @@ class Learner():
             # Run batches
             for i, (X, y) in zip(progress_bar, self.train_dataloader):
 
-                # Run validation data before last batch
+                # Validation epoch before last batch
                 if i == self.number_of_train_batches - 1:
                     with torch.no_grad():
                         self.validationEpoch()
