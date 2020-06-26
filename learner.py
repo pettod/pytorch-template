@@ -29,11 +29,11 @@ class Learner():
 
         # Model details
         self.model_root = "saved_models"
+        save_model_directory = os.path.join(
+            self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
         self.model = loadModel(
             self.model_root, load_pretrained_weights, model_path
             ).to(self.device)
-        save_model_directory = os.path.join(
-            self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
 
         # Define optimizer and callbacks
         self.loss_function = loss_function
