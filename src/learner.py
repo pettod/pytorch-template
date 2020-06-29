@@ -9,8 +9,8 @@ import time
 from tqdm import trange
 
 # Project files
-from callbacks import CsvLogger, EarlyStopping
-from utils import \
+from src.callbacks import CsvLogger, EarlyStopping
+from src.utils import \
     initializeEpochMetrics, updateEpochMetrics, getProgressbarText, \
     saveLearningCurve, loadModel
 

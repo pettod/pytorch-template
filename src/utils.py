@@ -9,8 +9,8 @@ import torch.nn as nn
 from math import ceil
 
 # Project files
-import metrics
-from network import Net
+import src.metrics
+from src.network import Net
 
 
 def getMetrics():

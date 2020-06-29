@@ -3,8 +3,8 @@ import torch
 from torchvision import transforms
 
 # Project files
-from dataset import ImageDataset
-from learner import Learner
+from src.dataset import ImageDataset
+from src.learner import Learner
 
 
 # Data paths
