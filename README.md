@@ -4,7 +4,7 @@
 
 Template to start developing models in Pytorch. What does the template do:
 
-- Run training for your dataset (training and validation datasets)
+- Run training for a dataset (training and validation datasets)
 
 - Print metrics after each iteration
 
@@ -18,6 +18,8 @@ Template to start developing models in Pytorch. What does the template do:
 
 - Save learning curves image (.png) of loss and metrics after each epoch
 
+- Test model with validation data
+
 ## Usage
 
 Things needed to be changed in a new project:
@@ -26,7 +28,7 @@ Things needed to be changed in a new project:
 
 1. `src/dataset.py`: Define [PyTorch dataset](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html) which returns single sample with given sample index. Just inherit `Dataset`, and implement `__len__` and `__getitem__` member functions.
 
-1. `network.py`: Add model structure.
+1. `src/network.py`: Add model structure.
 
 1. `src/loss_functions.py`: Define loss function and import it in `train.py`.
 
