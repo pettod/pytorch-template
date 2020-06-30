@@ -62,7 +62,7 @@ def getProgressbarText(epoch_metrics, mode):
     return text
 
 
-def saveLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
+def saveLearningCurve(log_file_path=None, model_root="saved_models"):
     # Read CSV log file
     if log_file_path is None:
         log_file_path = sorted(glob.glob(os.path.join(
@@ -78,19 +78,24 @@ def saveLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
             continue
         else:
             log_data[column] = np.array(log_file[column].values)
+    number_of_epochs = log_file.shape[0]
 
     # Remove extra printings of same epoch
+    used_xticks = [i for i in range(number_of_epochs)]
     epoch_string_data = []
     previous_epoch = -1
-    for epoch in reversed(log_data["epoch"]):
+    for i, epoch in enumerate(reversed(log_data["epoch"])):
         if epoch != previous_epoch:
             epoch_string_data.append(epoch)
         else:
-            epoch_string_data.append('')
+            used_xticks.pop(-1*i - 1)
         previous_epoch = epoch
     epoch_string_data = epoch_string_data[::-1]
-    number_of_rows = len(epoch_string_data)
     log_data.pop("epoch", None)
+
+    # Limit number of printed epochs in x axis
+    used_xticks = used_xticks[::ceil(number_of_epochs / 11)]
+    epoch_string_data = epoch_string_data[::ceil(number_of_epochs / 11)]
 
     # Define train and validation subplots
     figure_dict = {}
@@ -107,8 +112,8 @@ def saveLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
     for i, key in enumerate(log_data.keys()):
         metric = key.split('_')[-1]
         plt.subplot(1, number_of_subplots, figure_dict[metric])
-        plt.plot(range(number_of_rows), log_data[key], label=key)
-        plt.xticks(range(number_of_rows), epoch_string_data)
+        plt.plot(range(number_of_epochs), log_data[key], label=key)
+        plt.xticks(used_xticks, epoch_string_data)
         plt.xlabel("Epoch")
         plt.title(metric.upper())
         plt.legend()
@@ -143,4 +148,3 @@ def loadModel(
     if optimizer:
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
     print("Loaded model: {}".format(model_name))
-
