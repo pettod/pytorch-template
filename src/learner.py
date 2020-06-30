@@ -34,10 +34,9 @@ class Learner():
             self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
         self.model = nn.DataParallel(Net()).to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        if load_pretrained_weights:
-            loadModel(self.model, self.model_root, model_path, self.optimizer)
-        print("{:,} model parameters".format(
-            sum(p.numel() for p in self.model.parameters() if p.requires_grad)))
+        loadModel(
+            self.model, self.model_root, model_path, self.optimizer,
+            load_pretrained_weights)
 
         # Callbacks, loss function, scheduler
         self.loss_function = loss_function

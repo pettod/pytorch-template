@@ -15,7 +15,7 @@ VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
 VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
 
 # Model parameters
-LOAD_MODEL = True
+LOAD_MODEL = False
 MODEL_PATH = None
 BATCH_SIZE = 16
 PATCH_SIZE = 256

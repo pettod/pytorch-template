@@ -116,7 +116,13 @@ def saveLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
     plt.savefig("{}.{}".format(log_file_path.split('.')[0], "png"))
 
 
-def loadModel(model, model_root, model_path=None, optimizer=None):
+def loadModel(
+        model, model_root, model_path=None, optimizer=None,
+        load_pretrained_weights=True):
+    print("{:,} model parameters".format(
+        sum(p.numel() for p in model.parameters() if p.requires_grad)))
+    if not load_pretrained_weights:
+        return
     # Load latest model
     if model_path is None:
         model_name = sorted(glob.glob(os.path.join(
