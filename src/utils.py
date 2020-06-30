@@ -62,7 +62,8 @@ def getProgressbarText(epoch_metrics, mode):
     return text
 
 
-def saveLearningCurve(log_file_path=None, model_root="saved_models"):
+def saveLearningCurve(
+        log_file_path=None, model_root="saved_models", xticks_limit=13):
     # Read CSV log file
     if log_file_path is None:
         log_file_path = sorted(glob.glob(os.path.join(
@@ -94,8 +95,9 @@ def saveLearningCurve(log_file_path=None, model_root="saved_models"):
     log_data.pop("epoch", None)
 
     # Limit number of printed epochs in x axis
-    used_xticks = used_xticks[::ceil(number_of_epochs / 11)]
-    epoch_string_data = epoch_string_data[::ceil(number_of_epochs / 11)]
+    used_xticks = used_xticks[::ceil(number_of_epochs / xticks_limit)]
+    epoch_string_data = epoch_string_data[::ceil(
+        number_of_epochs / xticks_limit)]
 
     # Define train and validation subplots
     figure_dict = {}
