@@ -10,6 +10,7 @@ from tqdm import trange
 
 # Project files
 from src.callbacks import CsvLogger, EarlyStopping
+from src.network import Net
 from src.utils import \
     initializeEpochMetrics, updateEpochMetrics, getProgressbarText, \
     saveLearningCurve, loadModel
@@ -27,24 +28,26 @@ class Learner():
         if not torch.cuda.is_available():
             print("WARNING: Running on CPU\n\n\n\n")
 
-        # Model details
+        # Model, optimizer
         self.model_root = "saved_models"
         save_model_directory = os.path.join(
             self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
-        self.model = loadModel(
-            self.model_root, load_pretrained_weights, model_path
-            ).to(self.device)
-
-        # Define optimizer and callbacks
-        self.loss_function = loss_function
+        self.model = nn.DataParallel(Net()).to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        if load_pretrained_weights:
+            loadModel(self.model, self.model_root, model_path, self.optimizer)
+        print("{:,} model parameters".format(
+            sum(p.numel() for p in self.model.parameters() if p.requires_grad)))
+
+        # Callbacks, loss function, scheduler
+        self.loss_function = loss_function
         self.scheduler = ReduceLROnPlateau(
             self.optimizer, "min", 0.3, patience//3, min_lr=1e-8)
         self.csv_logger = CsvLogger(save_model_directory)
         self.early_stopping = EarlyStopping(save_model_directory, patience)
         self.epoch_metrics = {}
 
-        # Define train and validation batch generators
+        # Train and validation batch generators
         self.train_dataloader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True,
             num_workers=num_workers, drop_last=drop_last_batch)
@@ -71,7 +74,8 @@ class Learner():
         print("\n{}".format(getProgressbarText(self.epoch_metrics, "Valid")))
         self.csv_logger.__call__(self.epoch_metrics)
         validation_loss = self.epoch_metrics["valid_loss"]
-        self.early_stopping.__call__(validation_loss, self.model)
+        self.early_stopping.__call__(
+            validation_loss, self.model, self.optimizer)
         self.scheduler.step(validation_loss)
         saveLearningCurve(model_root=self.model_root)
 
@@ -80,7 +84,6 @@ class Learner():
         epochs = 1000
         for epoch in range(1, epochs+1):
             if self.early_stopping.isEarlyStop():
-                print("Early stop")
                 break
             progress_bar = trange(self.number_of_train_batches, leave=False)
             progress_bar.set_description(f" Epoch {epoch}/{epochs}")

@@ -9,8 +9,7 @@ import torch.nn as nn
 from math import ceil
 
 # Project files
-import src.metrics
-from src.network import Net
+import src.metrics as metrics
 
 
 def getMetrics():
@@ -117,29 +116,25 @@ def saveLearningCurve(log_file_path=None, model_root="saved_models/pytorch"):
     plt.savefig("{}.{}".format(log_file_path.split('.')[0], "png"))
 
 
-def loadModel(model_root, load_pretrained_weights=False, model_path=None):
-    if load_pretrained_weights:
-
-        # Load latest model
-        if model_path is None:
-            model_name = sorted(glob.glob(os.path.join(
-                model_root, *['*', "*.pt"])))[-1]
-        else:
-
-            # Load model based on index
-            if type(model_path) == int:
-                model_name = sorted(glob.glob(os.path.join(
-                    model_root, *['*', "*.pt"])))[model_path]
-
-            # Load defined model path
-            else:
-                model_name = model_path
-        model = nn.DataParallel(Net())
-        model.load_state_dict(torch.load(model_name))
-        model.eval()
-        print("Loaded model: {}".format(model_name))
+def loadModel(model, model_root, model_path=None, optimizer=None):
+    # Load latest model
+    if model_path is None:
+        model_name = sorted(glob.glob(os.path.join(
+            model_root, *['*', "*.pt"])))[-1]
     else:
-        model = nn.DataParallel(Net())
-    print("{:,} model parameters".format(
-        sum(p.numel() for p in model.parameters() if p.requires_grad)))
-    return model
+
+        # Load model based on index
+        if type(model_path) == int:
+            model_name = sorted(glob.glob(os.path.join(
+                model_root, *['*', "*.pt"])))[model_path]
+
+        # Load defined model path
+        else:
+            model_name = model_path
+    checkpoint = torch.load(model_name)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model.eval()
+    if optimizer:
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    print("Loaded model: {}".format(model_name))
+

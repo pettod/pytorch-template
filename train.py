@@ -5,7 +5,7 @@ from torchvision import transforms
 # Project files
 from src.dataset import ImageDataset
 from src.learner import Learner
-
+from src.loss_functions import maeGradientPlusMae as lossFunction
 
 # Data paths
 DATA_ROOT = os.path.realpath("../../REDS")
@@ -15,7 +15,7 @@ VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
 VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
 
 # Model parameters
-LOAD_MODEL = False
+LOAD_MODEL = True
 MODEL_PATH = None
 BATCH_SIZE = 16
 PATCH_SIZE = 256
@@ -23,10 +23,6 @@ PATIENCE = 10
 LEARNING_RATE = 1e-4
 DROP_LAST_BATCH = False
 NUMBER_OF_DATALOADER_WORKERS = 8
-
-
-def lossFunction(y_pred, y_true):
-    return torch.mean(torch.abs(y_pred - y_true))
 
 
 def main():

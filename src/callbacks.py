@@ -34,11 +34,11 @@ class EarlyStopping:
         if not os.path.isdir(save_model_directory):
             os.makedirs(save_model_directory)
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss, model, optimizer):
         score = -val_loss
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_loss, model)
+            self.save_checkpoint(val_loss, model, optimizer)
         elif score < self.best_score + self.delta:
             self.counter += 1
             print(f"EarlyStopping counter: {self.counter}/{self.patience}")
@@ -46,18 +46,22 @@ class EarlyStopping:
                 self.early_stop = True
         else:
             self.best_score = score
-            self.save_checkpoint(val_loss, model)
+            self.save_checkpoint(val_loss, model, optimizer)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model):
+    def save_checkpoint(self, val_loss, model, optimizer):
         """Saves model when validation loss decrease."""
         if self.verbose:
             print("Validation loss decreased. Model saved")
-        torch.save(
-            model.state_dict(), os.path.join(self.save_directory, "model.pt"))
+        torch.save({
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            }, os.path.join(self.save_directory, "model.pt"))
         self.val_loss_min = val_loss
 
     def isEarlyStop(self):
+        if self.early_stop:
+            print("Early stop")
         return self.early_stop
 
 
