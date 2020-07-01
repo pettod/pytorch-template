@@ -67,7 +67,8 @@ class Learner():
             output = self.model(X)
             loss = self.loss_function(output, y)
             updateEpochMetrics(
-                output, y, loss, i, self.epoch_metrics, "valid")
+                output, y, loss, i, self.epoch_metrics, "valid",
+                self.optimizer)
 
         # Logging
         print("\n{}".format(getProgressbarText(self.epoch_metrics, "Valid")))

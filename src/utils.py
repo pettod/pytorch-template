@@ -40,7 +40,8 @@ def initializeEpochMetrics(epoch):
 
 
 def updateEpochMetrics(
-        y_pred, y_true, loss, epoch_iteration_index, epoch_metrics, mode):
+        y_pred, y_true, loss, epoch_iteration_index, epoch_metrics, mode,
+        optimizer=None):
     metric_scores = computeMetrics(y_pred, y_true)
     metric_scores["loss"] = loss
     for key, value in metric_scores.items():
@@ -50,6 +51,8 @@ def updateEpochMetrics(
         epoch_metrics[f"{mode}_{key}"] += ((
             value - epoch_metrics[f"{mode}_{key}"]) /
             (epoch_iteration_index + 1))
+    if optimizer:
+        epoch_metrics["learning_rate"] = optimizer.param_groups[0]["lr"]
 
 
 def getProgressbarText(epoch_metrics, mode):
