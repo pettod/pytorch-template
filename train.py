@@ -29,11 +29,17 @@ def main():
         transforms.RandomCrop(PATCH_SIZE),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5]),
     ])
     valid_transforms = transforms.Compose([
         transforms.CenterCrop(PATCH_SIZE),
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5]),
     ])
     train_dataset = ImageDataset(TRAIN_X_DIR, TRAIN_Y_DIR, train_transforms)
     valid_dataset = ImageDataset(VALID_X_DIR, VALID_Y_DIR, valid_transforms)

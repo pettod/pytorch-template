@@ -11,6 +11,7 @@ from tqdm import tqdm
 # Project files
 from src.dataset import ImageDataset
 from src.network import Net
+from src.utils import loadModel
 
 # Data paths
 DATA_ROOT = os.path.realpath("../../REDS")
@@ -28,7 +29,10 @@ def main():
     # Dataset
     valid_transforms = transforms.Compose([
         transforms.CenterCrop(PATCH_SIZE),
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5]),
     ])
     valid_dataset = ImageDataset(VALID_X_DIR, VALID_Y_DIR, valid_transforms)
     valid_dataloader = DataLoader(
@@ -49,6 +53,7 @@ def main():
     # Predict and save
     with torch.no_grad():
         model = nn.DataParallel(Net()).to(device)
+        loadModel(model, "saved_models", MODEL_PATH)
         for i, (X, y) in enumerate(tqdm(valid_dataloader)):
             X, y = X.to(device), y.numpy()
             output = model(X).cpu().numpy()
