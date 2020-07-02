@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 
-def meanAbsoluteGradientError(y_true, y_pred):
+def meanAbsoluteGradientError(y_pred, y_true):
     b, c, h, w = y_true.shape
     sobel_kernel_x = torch.tensor([
         [-1., 0., 1.],
@@ -22,7 +22,7 @@ def meanAbsoluteGradientError(y_true, y_pred):
     return torch.mean(gradients_error_x + gradients_error_y)
 
 
-def maeGradientPlusMae(y_true, y_pred):
+def maeGradientPlusMae(y_pred, y_true):
     if y_true.shape != y_pred.shape:
         new_shape = y_true.shape[-2:]
         y_pred = F.interpolate(y_pred, new_shape, mode="bilinear")

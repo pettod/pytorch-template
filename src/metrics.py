@@ -6,7 +6,7 @@ from math import exp
 
 
 def ssim(
-        img1, img2, max_val=1.0, filter_size=11, filter_sigma=1.5, k1=0.01,
+        img1, img2, max_val=2.0, filter_size=11, filter_sigma=1.5, k1=0.01,
         k2=0.03):
     def gaussian(window_size, sigma=1.5):
         gauss = torch.Tensor([
@@ -56,7 +56,7 @@ def ssim(
     return _ssim(img1, img2, window, filter_size, channel, max_val, k1, k2)
 
 
-def psnr(y_true, y_pred, max_pixel_value=1.0):
+def psnr(y_true, y_pred, max_pixel_value=2.0):
     mae = torch.mean(torch.abs(y_true - y_pred))
     if mae == 0:
         return 100

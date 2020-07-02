@@ -33,3 +33,5 @@ Things needed to be changed in a new project:
 1. `src/loss_functions.py`: Define loss function and import it in `train.py`.
 
 1. `src/metrics.py`: Create metric functions that take only 2 inputs (prediction and ground truth). These functions are used automatically in the code.
+
+1. `test.py`: Modify tests depending on your prediction data type.
