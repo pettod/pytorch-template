@@ -4,6 +4,12 @@ import os
 import pandas as pd
 
 
+def createSaveModelDirectory(save_directory):
+    # Create folders if do not exist
+    if not os.path.isdir(save_directory):
+        os.makedirs(save_directory)
+
+
 class EarlyStopping:
     """
     Early stops the training if validation loss doesn't improve after a 
@@ -30,11 +36,8 @@ class EarlyStopping:
         self.delta = delta
         self.save_directory = save_model_directory
 
-        # Create folders if do not exist
-        if not os.path.isdir(save_model_directory):
-            os.makedirs(save_model_directory)
-
     def __call__(self, val_loss, model, optimizer):
+        createSaveModelDirectory(self.save_directory)
         score = -val_loss
         if self.best_score is None:
             self.best_score = score
@@ -67,10 +70,13 @@ class EarlyStopping:
 
 class CsvLogger:
     def __init__(self, save_model_directory):
+        self.save_directory = save_model_directory
         self.logs_file_path = os.path.join(
             save_model_directory, "logs.csv")
 
     def __call__(self, loss_and_metrics):
+        createSaveModelDirectory(self.save_directory)
+
         # Create CSV file
         new_data_frame = pd.DataFrame(loss_and_metrics, index=[0])
         if not os.path.isfile(self.logs_file_path):
