@@ -22,25 +22,24 @@ class Learner():
             loss_function, patience=10, num_workers=1,
             load_pretrained_weights=False, model_path=None,
             drop_last_batch=False):
+        # Device, save folder, callbacks
         self.device = getTorchDevice()
         self.model_root = "saved_models"
         save_model_directory = os.path.join(
             self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
         self.epoch_metrics = {}
+        self.csv_logger = CsvLogger(save_model_directory)
+        self.early_stopping = EarlyStopping(save_model_directory, patience)
 
-        # Model, optimizer
+        # Model, optimizer, loss function, scheduler
         self.model = nn.DataParallel(Net()).to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        loadModel(
-            self.model, self.model_root, model_path, self.optimizer,
-            load_pretrained_weights)
-
-        # Callbacks, loss function, scheduler
         self.loss_function = loss_function
         self.scheduler = ReduceLROnPlateau(
             self.optimizer, "min", 0.3, patience//3, min_lr=1e-8)
-        self.csv_logger = CsvLogger(save_model_directory)
-        self.early_stopping = EarlyStopping(save_model_directory, patience)
+        loadModel(
+            self.model, self.model_root, model_path, self.optimizer,
+            load_pretrained_weights)
 
         # Train and validation batch generators
         self.train_dataloader = DataLoader(
