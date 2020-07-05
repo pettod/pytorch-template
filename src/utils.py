@@ -12,6 +12,13 @@ from math import ceil
 import src.metrics as metrics
 
 
+def getTorchDevice():
+    # Device (CPU / CUDA)
+    if not torch.cuda.is_available():
+        print("WARNING: Running on CPU\n\n\n\n")
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def getMetrics():
     metrics_name_and_function_pointers = [
         metric for metric in getmembers(metrics, isfunction)

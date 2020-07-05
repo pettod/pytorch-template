@@ -13,7 +13,7 @@ from src.callbacks import CsvLogger, EarlyStopping
 from src.network import Net
 from src.utils import \
     initializeEpochMetrics, updateEpochMetrics, getProgressbarText, \
-    saveLearningCurve, loadModel
+    saveLearningCurve, loadModel, getTorchDevice
 
 
 class Learner():
@@ -22,11 +22,7 @@ class Learner():
             loss_function, patience, num_workers=1,
             load_pretrained_weights=False, model_path=None,
             drop_last_batch=False):
-        # Device (CPU / CUDA)
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu")
-        if not torch.cuda.is_available():
-            print("WARNING: Running on CPU\n\n\n\n")
+        self.device = getTorchDevice()
 
         # Model, optimizer
         self.model_root = "saved_models"
