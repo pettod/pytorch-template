@@ -19,15 +19,16 @@ from src.utils import \
 class Learner():
     def __init__(
             self, train_dataset, valid_dataset, batch_size, learning_rate,
-            loss_function, patience, num_workers=1,
+            loss_function, patience=10, num_workers=1,
             load_pretrained_weights=False, model_path=None,
             drop_last_batch=False):
         self.device = getTorchDevice()
-
-        # Model, optimizer
         self.model_root = "saved_models"
         save_model_directory = os.path.join(
             self.model_root, time.strftime("%Y-%m-%d_%H%M%S"))
+        self.epoch_metrics = {}
+
+        # Model, optimizer
         self.model = nn.DataParallel(Net()).to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         loadModel(
@@ -40,7 +41,6 @@ class Learner():
             self.optimizer, "min", 0.3, patience//3, min_lr=1e-8)
         self.csv_logger = CsvLogger(save_model_directory)
         self.early_stopping = EarlyStopping(save_model_directory, patience)
-        self.epoch_metrics = {}
 
         # Train and validation batch generators
         self.train_dataloader = DataLoader(
