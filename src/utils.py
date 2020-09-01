@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import time
 import torch
 import torch.nn as nn
 from math import ceil
@@ -73,11 +74,15 @@ def getProgressbarText(epoch_metrics, mode):
 
 
 def saveLearningCurve(
-        log_file_path=None, model_root="saved_models", xticks_limit=13):
+        log_file_path=None, model_directory=None, model_root="saved_models",
+        xticks_limit=13):
     # Read CSV log file
-    if log_file_path is None:
+    if log_file_path is None and model_directory is None:
         log_file_path = sorted(glob.glob(os.path.join(
             model_root, *['*', "*.csv"])))[-1]
+    elif model_directory is not None:
+        log_file_path = glob.glob(os.path.join(
+            model_directory, "*.csv"))[0]
     log_file = pd.read_csv(log_file_path)
 
     # Read data into dictionary
@@ -134,29 +139,43 @@ def saveLearningCurve(
 
 
 def loadModel(
-        model, model_root, model_path=None, optimizer=None,
-        load_pretrained_weights=True):
+        model, epoch_metrics, model_root="saved_models", model_path=None,
+        optimizer=None, load_pretrained_weights=True):
     print("{:,} model parameters".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
-    if not load_pretrained_weights:
-        return
-    # Load latest model
-    if model_path is None:
-        model_name = sorted(glob.glob(os.path.join(
-            model_root, *['*', "*.pt"])))[-1]
-    else:
+    start_epoch = 1
+    model_directory = os.path.join(
+        model_root, time.strftime("%Y-%m-%d_%H%M%S"))
 
-        # Load model based on index
-        if type(model_path) == int:
+    if load_pretrained_weights:
+
+        # Load latest model
+        if model_path is None:
             model_name = sorted(glob.glob(os.path.join(
-                model_root, *['*', "*.pt"])))[model_path]
-
-        # Load defined model path
+                model_root, *['*', "*.pt"])))[-1]
         else:
-            model_name = model_path
-    checkpoint = torch.load(model_name)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.eval()
-    if optimizer:
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-    print("Loaded model: {}".format(model_name))
+
+            # Load model based on index
+            if type(model_path) == int:
+                model_name = sorted(glob.glob(os.path.join(
+                    model_root, *['*', "*.pt"])))[model_path]
+
+            # Load defined model path
+            else:
+                model_name = model_path
+
+        model_directory = os.path.join(*model_name.split('/')[:-1])
+        checkpoint = torch.load(model_name)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model.eval()
+        if optimizer:
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        epoch_metrics["valid_loss"] = checkpoint["valid_loss"]
+        log_files = glob.glob(os.path.join(model_directory, "*.csv"))
+        if len(log_files):
+            start_epoch = int(pd.read_csv(
+                log_files[0])["epoch"].to_list()[-1]) + 1
+
+        print("Loaded model: {}".format(model_name))
+
+    return start_epoch, model_directory

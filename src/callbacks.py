@@ -16,7 +16,8 @@ class EarlyStopping:
     given patience.
     """
     def __init__(
-            self, save_model_directory, patience=10, verbose=False, delta=0):
+            self, save_model_directory, patience=10, verbose=False, delta=0,
+            counter=0, validation_loss_min=np.Inf):
         """
         Args:
             patience : int
@@ -26,22 +27,27 @@ class EarlyStopping:
             delta : float
                 Minimum change in the monitored quantity to qualify as an
                 improvement.
+            counter : int
+                Early stopping counter
+            validation_loss_min : float
+                Minimum validation loss achieved
         """
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = np.Inf
+        self.val_loss_min = validation_loss_min
         self.delta = delta
         self.save_directory = save_model_directory
 
-    def __call__(self, val_loss, model, optimizer):
+    def __call__(self, epoch_metrics, model, optimizer):
         createSaveModelDirectory(self.save_directory)
+        val_loss = epoch_metrics["valid_loss"]
         score = -val_loss
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_loss, model, optimizer)
+            self.save_checkpoint(epoch_metrics, model, optimizer)
         elif score < self.best_score + self.delta:
             self.counter += 1
             print(f"EarlyStopping counter: {self.counter}/{self.patience}")
@@ -49,18 +55,21 @@ class EarlyStopping:
                 self.early_stop = True
         else:
             self.best_score = score
-            self.save_checkpoint(val_loss, model, optimizer)
+            self.save_checkpoint(epoch_metrics, model, optimizer)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model, optimizer):
+    def save_checkpoint(self, epoch_metrics, model, optimizer):
         """Saves model when validation loss decrease."""
         if self.verbose:
             print("Validation loss decreased. Model saved")
         torch.save({
+            **{
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
-            }, os.path.join(self.save_directory, "model.pt"))
-        self.val_loss_min = val_loss
+            },
+            **epoch_metrics},
+            os.path.join(self.save_directory, "model.pt"))
+        self.val_loss_min = epoch_metrics["valid_loss"]
 
     def isEarlyStop(self):
         if self.early_stop:
