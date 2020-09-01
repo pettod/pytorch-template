@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import sys
 import time
 import torch
 import torch.nn as nn
@@ -146,6 +147,8 @@ def loadModel(
     start_epoch = 1
     model_directory = os.path.join(
         model_root, time.strftime("%Y-%m-%d_%H%M%S"))
+    if len(sys.argv) > 1 and sys.argv[1] != '&':
+        model_directory = f"{model_directory}_{sys.argv[1]}"
 
     if load_pretrained_weights:
 
