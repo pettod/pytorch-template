@@ -28,13 +28,16 @@ class Learner():
         self.model = nn.DataParallel(Net()).to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.loss_function = loss_function
-        self.start_epoch, self.model_directory = loadModel(
-            self.model, self.epoch_metrics, "saved_models", model_path,
-            self.optimizer, load_pretrained_weights)
+        self.start_epoch, self.model_directory, validation_loss_min = \
+            loadModel(
+                self.model, self.epoch_metrics, "saved_models", model_path,
+                self.optimizer, load_pretrained_weights)
 
         # Callbacks
         self.csv_logger = CsvLogger(self.model_directory)
-        self.early_stopping = EarlyStopping(self.model_directory, patience)
+        self.early_stopping = EarlyStopping(
+            self.model_directory, patience,
+            validation_loss_min=validation_loss_min)
         self.scheduler = ReduceLROnPlateau(
             self.optimizer, "min", 0.3, patience//3, min_lr=1e-8)
 

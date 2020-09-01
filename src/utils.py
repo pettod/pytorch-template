@@ -144,6 +144,7 @@ def loadModel(
         optimizer=None, load_pretrained_weights=True):
     print("{:,} model parameters".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
+    validation_loss_min = np.Inf
     start_epoch = 1
     model_directory = os.path.join(
         model_root, time.strftime("%Y-%m-%d_%H%M%S"))
@@ -173,7 +174,7 @@ def loadModel(
         model.eval()
         if optimizer:
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-        epoch_metrics["valid_loss"] = checkpoint["valid_loss"]
+        validation_loss_min = checkpoint["valid_loss"]
         log_files = glob.glob(os.path.join(model_directory, "*.csv"))
         if len(log_files):
             start_epoch = int(pd.read_csv(
@@ -181,4 +182,4 @@ def loadModel(
 
         print("Loaded model: {}".format(model_name))
 
-    return start_epoch, model_directory
+    return start_epoch, model_directory, validation_loss_min
