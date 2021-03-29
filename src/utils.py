@@ -11,14 +11,8 @@ import torch.nn as nn
 from math import ceil
 
 # Project files
+from config import CONFIG
 import src.metrics as metrics
-
-
-def getTorchDevice():
-    # Device (CPU / CUDA)
-    if not torch.cuda.is_available():
-        print("WARNING: Running on CPU\n\n\n\n")
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def getMetrics():
@@ -140,8 +134,8 @@ def saveLearningCurve(
 
 
 def loadModel(
-        model, epoch_metrics, model_root="saved_models", model_path=None,
-        optimizer=None, load_pretrained_weights=True):
+        model, epoch_metrics, model_path=None, optimizer=None,
+        load_pretrained_weights=True, model_root="saved_models"):
     print("{:,} model parameters".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
     validation_loss_min = np.Inf
@@ -183,3 +177,29 @@ def loadModel(
         print("Loaded model: {}".format(model_name))
 
     return start_epoch, model_directory, validation_loss_min
+
+
+def getDataloader(dataset, shuffle=True):
+    return torch.utils.data.DataLoader(
+        dataset, batch_size=CONFIG.BATCH_SIZE, shuffle=shuffle,
+        num_workers=CONFIG.NUMBER_OF_DATALOADER_WORKERS,
+        drop_last=CONFIG.DROP_LAST_BATCH)
+
+
+def getIterations(data_loader):
+    if CONFIG.ITERATIONS_PER_EPOCH > 1:
+        return min(len(data_loader), CONFIG.ITERATIONS_PER_EPOCH)
+    elif CONFIG.ITERATIONS_PER_EPOCH == 1:
+        return len(data_loader)
+    else:
+        return int(len(data_loader) * CONFIG.ITERATIONS_PER_EPOCH)
+
+
+def toDevice(batch):
+    if type(batch) == tuple:
+        batch = tuple([sample.to(CONFIG.DEVICE) for sample in batch])
+    elif type(batch) == list:
+        batch = [sample.to(CONFIG.DEVICE) for sample in batch]
+    else:
+        batch = batch.to(CONFIG.DEVICE)
+    return batch

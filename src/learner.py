@@ -1,54 +1,37 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.utils.data import DataLoader
-
-import os
 from tqdm import trange
 
 # Project files
-from src.callbacks import CsvLogger, EarlyStopping
-from src.network import Net
-from src.utils import \
-    initializeEpochMetrics, updateEpochMetrics, getProgressbarText, \
-    saveLearningCurve, loadModel, getTorchDevice
+from config import CONFIG
+import src.callbacks as cb
+import src.utils as ut
 
 
 class Learner():
-    def __init__(
-            self, train_dataset, valid_dataset, batch_size, learning_rate,
-            loss_function, patience=10, num_workers=1,
-            load_pretrained_weights=False, model_path=None,
-            drop_last_batch=False):
-        self.device = getTorchDevice()
+    def __init__(self, train_dataset, valid_dataset):
         self.epoch_metrics = {}
 
         # Model, optimizer, loss function, scheduler
-        self.model = nn.DataParallel(Net()).to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.loss_function = loss_function
-        self.start_epoch, self.model_directory, validation_loss_min = \
-            loadModel(
-                self.model, self.epoch_metrics, "saved_models", model_path,
-                self.optimizer, load_pretrained_weights)
+        self.model = nn.DataParallel(CONFIG.MODEL).to(CONFIG.DEVICE)
+        self.optimizer = CONFIG.OPTIMIZER
+        self.scheduler = CONFIG.SCHEDULER
+        self.loss_function = CONFIG.LOSS_FUNCTION
 
         # Callbacks
-        self.csv_logger = CsvLogger(self.model_directory)
-        self.early_stopping = EarlyStopping(
-            self.model_directory, patience,
+        self.start_epoch, self.model_directory, validation_loss_min = \
+            ut.loadModel(
+                self.model, self.epoch_metrics, CONFIG.MODEL_PATH,
+                self.optimizer, CONFIG.LOAD_MODEL)
+        self.csv_logger = cb.CsvLogger(self.model_directory)
+        self.early_stopping = cb.EarlyStopping(
+            self.model_directory, CONFIG.PATIENCE,
             validation_loss_min=validation_loss_min)
-        self.scheduler = ReduceLROnPlateau(
-            self.optimizer, "min", 0.3, patience//3, min_lr=1e-8)
 
         # Train and validation batch generators
-        self.train_dataloader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=True,
-            num_workers=num_workers, drop_last=drop_last_batch)
-        self.valid_dataloader = DataLoader(
-            valid_dataset, batch_size=batch_size, shuffle=False,
-            num_workers=num_workers, drop_last=drop_last_batch)
-        self.number_of_train_batches = len(self.train_dataloader)
+        self.train_dataloader = ut.getDataloader(train_dataset)
+        self.valid_dataloader = ut.getDataloader(valid_dataset, shuffle=False)
+        self.number_of_train_batches = ut.getIterations(self.train_dataloader)
         self.number_of_valid_batches = len(self.valid_dataloader)
 
     def validationEpoch(self):
@@ -57,21 +40,22 @@ class Learner():
         progress_bar.set_description(" Validation")
 
         # Run batches
-        for i, (X, y) in zip(progress_bar, self.valid_dataloader):
-            X, y = X.to(self.device), y.to(self.device)
-            output = self.model(X)
-            loss = self.loss_function(output, y)
-            updateEpochMetrics(
-                output, y, loss, i, self.epoch_metrics, "valid",
+        for i, batch in zip(progress_bar, self.valid_dataloader):
+            x, y = ut.toDevice(batch)
+            prediction = self.model(x)
+            loss = self.loss_function(prediction, y)
+            ut.updateEpochMetrics(
+                prediction, y, loss, i, self.epoch_metrics, "valid",
                 self.optimizer)
 
         # Logging
-        print("\n{}".format(getProgressbarText(self.epoch_metrics, "Valid")))
+        print("\n{}".format(ut.getProgressbarText(
+            self.epoch_metrics, "Valid")))
         self.csv_logger.__call__(self.epoch_metrics)
         self.early_stopping.__call__(
             self.epoch_metrics, self.model, self.optimizer)
         self.scheduler.step(self.epoch_metrics["valid_loss"])
-        saveLearningCurve(model_directory=self.model_directory)
+        ut.saveLearningCurve(model_directory=self.model_directory)
 
     def train(self):
         # Run epochs
@@ -81,10 +65,10 @@ class Learner():
                 break
             progress_bar = trange(self.number_of_train_batches, leave=False)
             progress_bar.set_description(f" Epoch {epoch}/{epochs}")
-            self.epoch_metrics = initializeEpochMetrics(epoch)
+            self.epoch_metrics = ut.initializeEpochMetrics(epoch)
 
             # Run batches
-            for i, (X, y) in zip(progress_bar, self.train_dataloader):
+            for i, batch in zip(progress_bar, self.train_dataloader):
 
                 # Validation epoch before last batch
                 if i == self.number_of_train_batches - 1:
@@ -92,16 +76,16 @@ class Learner():
                         self.validationEpoch()
 
                 # Feed forward and backpropagation
-                X, y = X.to(self.device), y.to(self.device)
+                x, y = ut.toDevice(batch)
                 self.model.zero_grad()
-                output = self.model(X)
-                loss = self.loss_function(output, y)
+                prediction = self.model(x)
+                loss = self.loss_function(prediction, y)
                 loss.backward()
                 self.optimizer.step()
 
                 # Compute metrics
                 with torch.no_grad():
-                    updateEpochMetrics(
-                        output, y, loss, i, self.epoch_metrics, "train")
+                    ut.updateEpochMetrics(
+                        prediction, y, loss, i, self.epoch_metrics, "train")
                     progress_bar.display(
-                        getProgressbarText(self.epoch_metrics, "Train"), 1)
+                        ut.getProgressbarText(self.epoch_metrics, "Train"), 1)
