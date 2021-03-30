@@ -60,15 +60,25 @@ class EarlyStopping:
 
     def save_checkpoint(self, epoch_metrics, model, optimizer):
         """Saves model when validation loss decrease."""
+        def saveModel(epoch_metrics, model, optimizer, model_name="model.pt"):
+            torch.save({
+                **{
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                },
+                **epoch_metrics},
+                os.path.join(self.save_directory, model_name)
+            )
+
+        # Save multiple models and each models' optimizer
+        if type(model) == list:
+            for i in range(len(model)):
+                saveModel(
+                    epoch_metrics, model[i], optimizer[i], f"model_{i+1}.pt")
+        else:
+            saveModel(epoch_metrics, model, optimizer)
         if self.verbose:
             print("Validation loss decreased. Model saved")
-        torch.save({
-            **{
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            },
-            **epoch_metrics},
-            os.path.join(self.save_directory, "model.pt"))
         self.val_loss_min = epoch_metrics["valid_loss"]
 
     def isEarlyStop(self):
