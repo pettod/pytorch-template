@@ -136,8 +136,11 @@ def saveLearningCurve(
 def loadModel(
         model, epoch_metrics, model_path=None, optimizer=None,
         load_pretrained_weights=True, model_root="saved_models"):
-    print("{:,} model parameters".format(
-        sum(p.numel() for p in model.parameters() if p.requires_grad)))
+    if type(model) != list:
+        model = [model]
+    for i in range(len(model)):
+        print("{:,} model parameters".format(
+            sum(p.numel() for p in model[i].parameters() if p.requires_grad)))
     validation_loss_min = np.Inf
     start_epoch = 1
     model_directory = os.path.join(
@@ -164,16 +167,19 @@ def loadModel(
 
         model_directory = os.path.join(*model_name.split('/')[:-1])
         checkpoint = torch.load(model_name)
-        model.load_state_dict(checkpoint["model_state_dict"])
-        model.eval()
+        for i in range(len(model)):
+            model[i].load_state_dict(checkpoint[f"model_{i}"])
+            model[i].eval()
         if optimizer:
-            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            if type(optimizer) != list:
+                optimizer = [optimizer]
+            for i in range(len(optimizer)):
+                optimizer[i].load_state_dict(checkpoint[f"optimizer_{i}"])
         validation_loss_min = checkpoint["valid_loss"]
         log_files = glob.glob(os.path.join(model_directory, "*.csv"))
         if len(log_files):
             start_epoch = int(pd.read_csv(
                 log_files[0])["epoch"].to_list()[-1]) + 1
-
         print("Loaded model: {}".format(model_name))
 
     return start_epoch, model_directory, validation_loss_min
