@@ -12,7 +12,8 @@ class Learner():
     def __init__(self, train_dataset, valid_dataset):
         self.epoch_metrics = {}
 
-        # Model, optimizer, loss function, scheduler
+        # Load from config
+        self.epochs = CONFIG.EPOCHS
         self.model = nn.DataParallel(CONFIG.MODEL).to(CONFIG.DEVICE)
         self.optimizer = CONFIG.OPTIMIZER
         self.scheduler = CONFIG.SCHEDULER
@@ -41,52 +42,55 @@ class Learner():
         self.scheduler.step(self.epoch_metrics["valid_loss"])
         ut.saveLearningCurve(model_directory=self.model_directory)
 
+    def validationIteration(self, batch, i):
+        x, y = ut.toDevice(batch)
+        prediction = self.model(x)
+        loss = self.loss_function(prediction, y)
+        ut.updateEpochMetrics(
+            prediction, y, loss, i, self.epoch_metrics, "valid",
+            self.optimizer)
+
+    def trainIteration(self, batch, i):
+        # Feed forward and backpropagation
+        x, y = ut.toDevice(batch)
+        self.model.zero_grad()
+        prediction = self.model(x)
+        loss = self.loss_function(prediction, y)
+        loss.backward()
+        self.optimizer.step()
+
+        # Compute metrics
+        with torch.no_grad():
+            ut.updateEpochMetrics(
+                prediction, y, loss, i, self.epoch_metrics, "train")
+
     def validationEpoch(self):
         print()
         progress_bar = trange(self.number_of_valid_batches, leave=False)
         progress_bar.set_description(" Validation")
-
-        # Run batches
         for i, batch in zip(progress_bar, self.valid_dataloader):
-            x, y = ut.toDevice(batch)
-            prediction = self.model(x)
-            loss = self.loss_function(prediction, y)
-            ut.updateEpochMetrics(
-                prediction, y, loss, i, self.epoch_metrics, "valid",
-                self.optimizer)
+            self.validationIteration(batch, i)
         print("\n{}".format(ut.getProgressbarText(
             self.epoch_metrics, "Valid")))
         self.logData()
 
-    def trainEpoch(self, progress_bar):
+    def trainEpoch(self, epoch):
+        progress_bar = trange(self.number_of_train_batches, leave=False)
+        progress_bar.set_description(f" Epoch {epoch}/{self.epochs}")
         for i, batch in zip(progress_bar, self.train_dataloader):
 
             # Validation epoch before last batch
             if i == self.number_of_train_batches - 1:
                 with torch.no_grad():
                     self.validationEpoch()
-
-            # Feed forward and backpropagation
-            x, y = ut.toDevice(batch)
-            self.model.zero_grad()
-            prediction = self.model(x)
-            loss = self.loss_function(prediction, y)
-            loss.backward()
-            self.optimizer.step()
-
-            # Compute metrics
+            self.trainIteration(batch, i)
             with torch.no_grad():
-                ut.updateEpochMetrics(
-                    prediction, y, loss, i, self.epoch_metrics, "train")
                 progress_bar.display(
                     ut.getProgressbarText(self.epoch_metrics, "Train"), 1)
 
     def train(self):
-        epochs = 1000
-        for epoch in range(self.start_epoch, epochs+1):
+        for epoch in range(self.start_epoch, self.epochs+1):
             if self.early_stopping.isEarlyStop():
                 break
-            progress_bar = trange(self.number_of_train_batches, leave=False)
-            progress_bar.set_description(f" Epoch {epoch}/{epochs}")
             self.epoch_metrics = ut.initializeEpochMetrics(epoch)
-            self.trainEpoch(progress_bar)
+            self.trainEpoch(epoch)

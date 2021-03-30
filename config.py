@@ -19,6 +19,7 @@ class CONFIG:
     VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
 
     # General parameters
+    EPOCHS = 1000
     LOAD_MODEL = False
     MODEL_PATH = None
     DROP_LAST_BATCH = False
