@@ -1,7 +1,5 @@
 from torchvision import transforms
-from multiprocessing import cpu_count
 
-# Project files
 from config import CONFIG
 from src.dataset import ImageDataset as Dataset
 from src.learner import Learner

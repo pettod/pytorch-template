@@ -1,7 +1,8 @@
 import os
+from multiprocessing import cpu_count
+
 import torch
 import torch.optim as optim
-from multiprocessing import cpu_count
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from src.loss_functions import maeGradientPlusMae as lossFunction

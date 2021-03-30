@@ -1,16 +1,16 @@
 import glob
-from inspect import getmembers, isfunction
-import matplotlib.pyplot as plt
-import numpy as np
 import os
-import pandas as pd
 import sys
 import time
-import torch
-import torch.nn as nn
+from inspect import getmembers, isfunction
 from math import ceil
 
-# Project files
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+
 from config import CONFIG
 import src.metrics as metrics
 

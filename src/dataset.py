@@ -1,12 +1,13 @@
-import cv2
-from glob import glob
 import os
-from PIL import Image
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
 import random
+from glob import glob
+
+import cv2
 import numpy as np
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 
 
 class ImageDataset(Dataset):
@@ -28,26 +29,3 @@ class ImageDataset(Dataset):
             random.seed(seed)
             target_image = self.transform(target_image)
         return np.array(input_image), np.array(target_image)
-
-
-if __name__ == "__main__":
-    DATA_ROOT = os.path.realpath("../../REDS")
-    TRAIN_X_DIR = os.path.join(DATA_ROOT, "train_blur/")
-    TRAIN_Y_DIR = os.path.join(DATA_ROOT, "train_sharp/")
-    PATCH_SIZE = 256
-    BATCH_SIZE = 4
-    data_transform = transforms.Compose([
-        transforms.RandomCrop(PATCH_SIZE),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip()
-    ])
-    dataset = ImageDataset(TRAIN_X_DIR, TRAIN_Y_DIR, transform=data_transform)
-    dataloader = DataLoader(
-        dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
-    for batch in dataloader:
-        x, y = batch
-        x, y = x.numpy(), y.numpy()
-        print(x.shape)
-        cv2.imshow("input, ground truth", cv2.cvtColor(cv2.hconcat(
-            [x[0], y[0]]), cv2.COLOR_RGB2BGR))
-        cv2.waitKey(0)

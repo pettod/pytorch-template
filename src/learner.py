@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from tqdm import trange
 
-# Project files
 from config import CONFIG
 import src.callbacks as cb
 import src.utils as ut
