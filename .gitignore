@@ -1,6 +1,11 @@
-*.pyc
-.vscode/*
+# File types
 *.csv
-*.pt
-*.png
 *.out
+*.png
+*.pt
+*.pyc
+
+# Folders
+.vscode/*
+saved_models/*
+tmp/*

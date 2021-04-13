@@ -1,4 +1,6 @@
 import os
+from glob import glob
+from shutil import copy, move
 
 import numpy as np
 import pandas as pd
@@ -38,17 +40,37 @@ class EarlyStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = validation_loss_min
+        self.valid_loss_min = validation_loss_min
         self.delta = delta
         self.save_directory = save_model_directory
+        self.tmp_folder = os.path.join(
+            "tmp", self.save_directory.split(os.sep)[-1])
+        self.saved_files = [
+            "config.py",
+            "src/network.py",
+            "src/loss_functions.py",
+        ]
+        self.saveNetworkConfig()
+
+    def saveNetworkConfig(self):
+        os.makedirs(self.tmp_folder, exist_ok=True)
+        for file_path in self.saved_files:
+            copy(file_path, self.tmp_folder)
+
+    def moveNetworkConfigToSaveDirectory(self):
+        if os.path.isdir(self.tmp_folder):
+            for file_path in glob(os.path.join(self.tmp_folder, '*')):
+                move(file_path, self.save_directory)
+            os.rmdir(self.tmp_folder)
 
     def __call__(self, epoch_metrics, model, optimizer):
         createSaveModelDirectory(self.save_directory)
-        val_loss = epoch_metrics["valid_loss"]
-        score = -val_loss
+        self.moveNetworkConfigToSaveDirectory()
+        valid_loss = epoch_metrics["valid_loss"]
+        score = -valid_loss
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(epoch_metrics, model, optimizer)
+            self.saveCheckpoint(epoch_metrics, model, optimizer)
         elif score < self.best_score + self.delta:
             self.counter += 1
             print(f"EarlyStopping counter: {self.counter}/{self.patience}")
@@ -56,10 +78,10 @@ class EarlyStopping:
                 self.early_stop = True
         else:
             self.best_score = score
-            self.save_checkpoint(epoch_metrics, model, optimizer)
+            self.saveCheckpoint(epoch_metrics, model, optimizer)
             self.counter = 0
 
-    def save_checkpoint(self, epoch_metrics, model, optimizer):
+    def saveCheckpoint(self, epoch_metrics, model, optimizer):
         """Saves model when validation loss decrease."""
         if type(model) != list:
             model = [model]
@@ -75,7 +97,7 @@ class EarlyStopping:
         )
         if self.verbose:
             print("Validation loss decreased. Model saved")
-        self.val_loss_min = epoch_metrics["valid_loss"]
+        self.valid_loss_min = epoch_metrics["valid_loss"]
 
     def isEarlyStop(self):
         if self.early_stop:
@@ -86,8 +108,7 @@ class EarlyStopping:
 class CsvLogger:
     def __init__(self, save_model_directory):
         self.save_directory = save_model_directory
-        self.logs_file_path = os.path.join(
-            save_model_directory, "logs.csv")
+        self.logs_file_path = os.path.join(self.save_directory, "logs.csv")
 
     def __call__(self, loss_and_metrics):
         createSaveModelDirectory(self.save_directory)
