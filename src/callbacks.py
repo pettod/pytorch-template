@@ -1,6 +1,6 @@
 import os
 from glob import glob
-from shutil import copy, move
+from shutil import copy, move, rmtree
 
 import numpy as np
 import pandas as pd
@@ -58,10 +58,19 @@ class EarlyStopping:
             copy(file_path, self.tmp_folder)
 
     def moveNetworkConfigToSaveDirectory(self):
+        # 'tmp/' folder exists
         if os.path.isdir(self.tmp_folder):
+
+            # Loop each file in 'tmp/' folder
             for file_path in glob(os.path.join(self.tmp_folder, '*')):
-                move(file_path, self.save_directory)
-            os.rmdir(self.tmp_folder)
+
+                # Move file to 'save_models/' folder if not yet there
+                if not os.path.isfile(os.path.join(
+                        self.save_directory, os.path.basename(file_path))):
+                    move(file_path, self.save_directory)
+        
+            # Remove 'tmp/' folder (even with files inside)
+            rmtree(self.tmp_folder, ignore_errors=True)
 
     def __call__(self, epoch_metrics, model, optimizer):
         createSaveModelDirectory(self.save_directory)
