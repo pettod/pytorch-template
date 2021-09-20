@@ -2,7 +2,7 @@ from torchvision import transforms
 
 from config import CONFIG
 from src.dataset import ImageDataset as Dataset
-from src.learner import Learner
+from src.trainer import Trainer
 
 
 def main():
@@ -20,8 +20,8 @@ def main():
         CONFIG.TRAIN_X_DIR, CONFIG.TRAIN_Y_DIR, train_transforms)
     valid_dataset = Dataset(
         CONFIG.VALID_X_DIR, CONFIG.VALID_Y_DIR, valid_transforms)
-    learner = Learner(train_dataset, valid_dataset)
-    learner.train()
+    trainer = Trainer(train_dataset, valid_dataset)
+    trainer.train()
 
 
 main()
