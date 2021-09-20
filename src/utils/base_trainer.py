@@ -34,12 +34,22 @@ class Basetrainer():
         self.number_of_train_batches = ut.getIterations(self.train_dataloader)
         self.number_of_valid_batches = len(self.valid_dataloader)
 
+    def logData(self):
+        self.csv_logger.__call__(self.epoch_metrics)
+        self.early_stopping.__call__(
+            self.epoch_metrics, self.model, self.optimizer)
+        self.scheduler.step(self.epoch_metrics["valid_loss"])
+        ut.saveLearningCurve(model_directory=self.model_directory)
+
     def validationEpoch(self):
         print()
         progress_bar = trange(self.number_of_valid_batches, leave=False)
         progress_bar.set_description(" Validation")
         for i, batch in zip(progress_bar, self.valid_dataloader):
-            self.validationIteration(batch, i)
+            prediction, y, loss = self.validationIteration(batch)
+            ut.updateEpochMetrics(
+                prediction, y, loss, i, self.epoch_metrics, "valid",
+                self.optimizer)
         print("\n{}".format(ut.getProgressbarText(
             self.epoch_metrics, "Valid")))
         self.logData()
@@ -53,8 +63,12 @@ class Basetrainer():
             if i == self.number_of_train_batches - 1:
                 with torch.no_grad():
                     self.validationEpoch()
-            self.trainIteration(batch, i)
+            prediction, y, loss = self.trainIteration(batch)
+
+            # Compute metrics, print progress bar
             with torch.no_grad():
+                ut.updateEpochMetrics(
+                    prediction, y, loss, i, self.epoch_metrics, "train")
                 progress_bar.display(
                     ut.getProgressbarText(self.epoch_metrics, "Train"), 1)
 

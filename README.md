@@ -22,7 +22,7 @@ Things needed to be changed in a new project:
 
 1. `src/dataset.py`: Define [PyTorch dataset](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html) which returns single sample with given sample index. Inherit `Dataset`, and implement `__len__` and `__getitem__` member functions.
 
-1. `src/learner.py`: If your data is more complex, implement `trainIteration` and `validationIteration` member functions.
+1. `src/trainer.py`: If your data is more complex, implement `trainIteration` and `validationIteration` member functions.
 
 1. `src/loss_functions.py`: Define loss function.
 

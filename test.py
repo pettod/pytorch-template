@@ -11,7 +11,7 @@ from tqdm import tqdm
 # Project files
 from src.dataset import ImageDataset
 from src.network import Net
-from src.utils import loadModel
+from src.utils.utils import loadModel
 
 # Data paths
 DATA_ROOT = os.path.realpath("../../REDS")
@@ -36,7 +36,7 @@ def main():
     ])
     valid_dataset = ImageDataset(VALID_X_DIR, VALID_Y_DIR, valid_transforms)
     valid_dataloader = DataLoader(
-        valid_dataset, batch_size=BATCH_SIZE, shuffle=True,
+        valid_dataset, batch_size=BATCH_SIZE, shuffle=False,
         num_workers=NUMBER_OF_DATALOADER_WORKERS)
 
     # Device (CPU / CUDA)
