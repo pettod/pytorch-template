@@ -14,12 +14,16 @@ def readImage(image_path):
     return Image.open(image_path).convert("RGB")
 
 
+def readImagePaths(data_path):
+    return np.array(sorted(glob(f"{data_path}/*/*.png")))
+
+
 class ImageDataset(Dataset):
     def __init__(self, input_path, target_path=None, transform=None):
-        self.input_image_paths = np.array(sorted(glob(f"{input_path}/*/*.png")))
+        self.input_image_paths = readImagePaths(input_path)
         self.target_image_paths = target_path
         if target_path:
-            self.target_image_paths = np.array(sorted(glob(f"{target_path}/*/*.png")))
+            self.target_image_paths = readImagePaths(target_path)
         self.transform = transform
         self.input_normalize = transforms.Normalize(
             mean=[0.5, 0.5, 0.5],
