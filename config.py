@@ -5,11 +5,11 @@ import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from src.loss_functions import maeGradientPlusMae as lossFunction
+from src.loss_functions import costFunction as lossFunction
 from src.network import Net
 
 
-DATA_ROOT = os.path.realpath("../REDS")
+DATA_ROOT = os.path.realpath("../input/REDS")
 
 
 class CONFIG:

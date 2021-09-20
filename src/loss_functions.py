@@ -2,6 +2,10 @@ import torch
 import torch.nn.functional as F
 
 
+def costFunction(y_pred, y_true):
+    return maeGradientPlusMae(y_pred, y_true)
+
+
 def meanAbsoluteGradientError(y_pred, y_true):
     b, c, h, w = y_true.shape
     sobel_kernel_x = torch.tensor([
