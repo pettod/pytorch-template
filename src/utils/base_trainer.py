@@ -13,16 +13,17 @@ class Basetrainer():
 
         # Load from config
         self.epochs = CONFIG.EPOCHS
-        self.model = nn.DataParallel(CONFIG.MODEL).to(CONFIG.DEVICE)
-        self.optimizer = CONFIG.OPTIMIZER
-        self.scheduler = CONFIG.SCHEDULER
+        self.models = [
+            nn.DataParallel(m).to(CONFIG.DEVICE) for m in CONFIG.MODELS]
+        self.optimizers = CONFIG.OPTIMIZERS
+        self.schedulers = CONFIG.SCHEDULERS
         self.loss_function = CONFIG.LOSS_FUNCTION
 
         # Callbacks
         self.start_epoch, self.model_directory, validation_loss_min = \
             ut.loadModel(
-                self.model, self.epoch_metrics, CONFIG.MODEL_PATH,
-                self.optimizer, CONFIG.LOAD_MODEL)
+                self.models, CONFIG.LOAD_MODEL, CONFIG.MODEL_PATH,
+                self.optimizers)
         self.csv_logger = cb.CsvLogger(self.model_directory)
         self.early_stopping = cb.EarlyStopping(
             self.model_directory, CONFIG.PATIENCE,
@@ -37,8 +38,9 @@ class Basetrainer():
     def logData(self):
         self.csv_logger.__call__(self.epoch_metrics)
         self.early_stopping.__call__(
-            self.epoch_metrics, self.model, self.optimizer)
-        self.scheduler.step(self.epoch_metrics["valid_loss"])
+            self.epoch_metrics, self.models, self.optimizers)
+        for s in self.schedulers:
+            s.step(self.epoch_metrics["valid_loss"])
         ut.saveLearningCurve(model_directory=self.model_directory)
 
     def validationEpoch(self):
@@ -49,7 +51,7 @@ class Basetrainer():
             prediction, y, loss = self.validationIteration(batch)
             ut.updateEpochMetrics(
                 prediction, y, loss, i, self.epoch_metrics, "valid",
-                self.optimizer)
+                self.optimizers)
         print("\n{}".format(ut.getProgressbarText(
             self.epoch_metrics, "Valid")))
         self.logData()

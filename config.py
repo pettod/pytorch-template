@@ -22,6 +22,7 @@ class CONFIG:
     # General parameters
     EPOCHS = 1000
     LOAD_MODEL = False
+    LOAD_OPTIMIZER_STATE = True
     MODEL_PATH = None
     DROP_LAST_BATCH = False
     NUMBER_OF_DATALOADER_WORKERS = cpu_count()
@@ -31,12 +32,17 @@ class CONFIG:
     LOSS_FUNCTION = lossFunction
     BATCH_SIZE = 16
     PATCH_SIZE = 256
-    PATIENCE = 10
-    LEARNING_RATE = 1e-4
+    PATIENCE = 20
+    LEARNING_RATES = [1e-4]
     ITERATIONS_PER_EPOCH = 1
 
     # Model
-    MODEL = Net()
-    OPTIMIZER = optim.Adam(MODEL.parameters(), lr=LEARNING_RATE)
-    SCHEDULER = ReduceLROnPlateau(
-        OPTIMIZER, "min", 0.3, PATIENCE//3, min_lr=1e-8)
+    MODELS = [
+        Net(),
+    ]
+    OPTIMIZERS = [
+        optim.Adam(MODELS[0].parameters(), lr=LEARNING_RATES[0]),
+    ]
+    SCHEDULERS = [
+        ReduceLROnPlateau(OPTIMIZERS[0], "min", 0.3, PATIENCE//3, min_lr=1e-8),
+    ]

@@ -55,7 +55,11 @@ def updateEpochMetrics(
             value - epoch_metrics[f"{mode}_{key}"]) /
             (epoch_iteration_index + 1))
     if optimizer:
-        epoch_metrics["learning_rate"] = optimizer.param_groups[0]["lr"]
+        if type(optimizer) == list:
+            for i, optim in enumerate(optimizer):
+                epoch_metrics[f"learning_rate_{i}"] = optim.param_groups[0]["lr"]
+        else:
+            epoch_metrics["learning_rate"] = optimizer.param_groups[0]["lr"]
 
 
 def getProgressbarText(epoch_metrics, mode):
@@ -85,7 +89,7 @@ def saveLearningCurve(
     for column in log_file:
         if column == "epoch":
             log_data[column] = np.array(log_file[column].values, dtype=np.str)
-        elif column == "learning_rate":
+        elif "learning_rate" in column:
             continue
         else:
             log_data[column] = np.array(log_file[column].values)
@@ -134,8 +138,8 @@ def saveLearningCurve(
 
 
 def loadModel(
-        model, epoch_metrics, model_path=None, optimizer=None,
-        load_pretrained_weights=True, model_root="saved_models"):
+        model, load_pretrained_weights=True, model_path=None, optimizer=None,
+        model_root="saved_models"):
     if type(model) != list:
         model = [model]
     for i in range(len(model)):
@@ -170,11 +174,14 @@ def loadModel(
         for i in range(len(model)):
             model[i].load_state_dict(checkpoint[f"model_{i}"])
             model[i].eval()
-        if optimizer:
+        if optimizer and CONFIG.LOAD_OPTIMIZER_STATE:
             if type(optimizer) != list:
                 optimizer = [optimizer]
             for i in range(len(optimizer)):
                 optimizer[i].load_state_dict(checkpoint[f"optimizer_{i}"])
+            print("Optimizer state loaded")
+        else:
+            print("Optimizer state not loaded")
         validation_loss_min = checkpoint["valid_loss"]
         log_files = glob.glob(os.path.join(model_directory, "*.csv"))
         if len(log_files):

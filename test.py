@@ -14,7 +14,7 @@ from src.network import Net
 from src.utils.utils import loadModel
 
 # Data paths
-DATA_ROOT = os.path.realpath("../../REDS")
+DATA_ROOT = os.path.realpath("../input/REDS")
 VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
 VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
 
@@ -53,7 +53,7 @@ def main():
     # Predict and save
     with torch.no_grad():
         model = nn.DataParallel(Net()).to(device)
-        loadModel(model, "saved_models", MODEL_PATH)
+        loadModel(model, model_path=MODEL_PATH)
         for i, (X, y) in enumerate(tqdm(valid_dataloader)):
             X, y = X.to(device), y.numpy()
             output = model(X).cpu().numpy()
