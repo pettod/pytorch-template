@@ -14,15 +14,15 @@ def readImage(image_path):
 
 
 def readImagePaths(data_path):
-    return np.array(sorted(glob(f"{data_path}/*/*.png")))
+    if data_path is not None:
+        return np.array(sorted(glob(f"{data_path}/*/*.png")))
+    return data_path
 
 
 class ImageDataset(Dataset):
     def __init__(self, input_path, target_path=None, transform=None):
         self.input_image_paths = readImagePaths(input_path)
-        self.target_image_paths = target_path
-        if target_path:
-            self.target_image_paths = readImagePaths(target_path)
+        self.target_image_paths = readImagePaths(target_path)
         self.transform = transform
         self.input_normalize = transforms.Normalize(
             mean=[0.5, 0.5, 0.5],
@@ -45,4 +45,4 @@ class ImageDataset(Dataset):
                 torch.manual_seed(seed)
                 target_image = self.transform(target_image)
             return input_image, target_image
-        return input_image
+        return input_image, self.input_image_paths[sample_index]
