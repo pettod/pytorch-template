@@ -165,6 +165,10 @@ def loadModel(
                 model_name = sorted(glob.glob(os.path.join(
                     model_root, *['*', "*.pt"])))[model_path]
 
+            # Only folder name given
+            elif '/' not in model_path:
+                model_name = glob.glob(os.path.join(model_root, model_path, "*.pt"))[0]
+
             # Load defined model path
             else:
                 model_name = model_path
