@@ -140,6 +140,28 @@ def saveLearningCurve(
 def loadModel(
         model, load_pretrained_weights=True, model_path=None, optimizer=None,
         model_root="saved_models"):
+    def loadModelPath():
+        # Load latest model
+        if model_path is None:
+            model_name = sorted(glob.glob(os.path.join(
+                model_root, *['*', "*.pt"])))[-1]
+        else:
+
+            # Load model based on index
+            if type(model_path) == int:
+                model_name = sorted(glob.glob(os.path.join(
+                    model_root, *['*', "*.pt"])))[model_path]
+
+            # Only folder name given
+            elif '/' not in model_path and '.' not in model_path:
+                model_name = glob.glob(os.path.join(
+                    model_root, model_path, "*.pt"))[0]
+
+            # Load defined model path
+            else:
+                model_name = model_path
+        return model_name
+
     if type(model) != list:
         model = [model]
     for i in range(len(model)):
@@ -153,28 +175,9 @@ def loadModel(
         model_directory = f"{model_directory}_{sys.argv[1]}"
 
     if load_pretrained_weights:
-
-        # Load latest model
-        if model_path is None:
-            model_name = sorted(glob.glob(os.path.join(
-                model_root, *['*', "*.pt"])))[-1]
-        else:
-
-            # Load model based on index
-            if type(model_path) == int:
-                model_name = sorted(glob.glob(os.path.join(
-                    model_root, *['*', "*.pt"])))[model_path]
-
-            # Only folder name given
-            elif '/' not in model_path:
-                model_name = glob.glob(os.path.join(model_root, model_path, "*.pt"))[0]
-
-            # Load defined model path
-            else:
-                model_name = model_path
-
-        model_directory = os.path.join(*model_name.split('/')[:-1])
-        checkpoint = torch.load(model_name)
+        model_path = loadModelPath()
+        model_directory = os.path.join(*model_path.split('/')[:-1])
+        checkpoint = torch.load(model_path)
         for i in range(len(model)):
             model[i].load_state_dict(checkpoint[f"model_{i}"])
             model[i].eval()
@@ -184,14 +187,14 @@ def loadModel(
             for i in range(len(optimizer)):
                 optimizer[i].load_state_dict(checkpoint[f"optimizer_{i}"])
             print("Optimizer state loaded")
+            validation_loss_min = checkpoint["valid_loss"]
+            log_files = glob.glob(os.path.join(model_directory, "*.csv"))
+            if len(log_files):
+                start_epoch = int(pd.read_csv(
+                    log_files[0])["epoch"].to_list()[-1]) + 1
         else:
             print("Optimizer state not loaded")
-        validation_loss_min = checkpoint["valid_loss"]
-        log_files = glob.glob(os.path.join(model_directory, "*.csv"))
-        if len(log_files):
-            start_epoch = int(pd.read_csv(
-                log_files[0])["epoch"].to_list()[-1]) + 1
-        print("Loaded model: {}".format(model_name))
+        print("Loaded model: {}".format(model_path))
 
     return start_epoch, model_directory, validation_loss_min
 
