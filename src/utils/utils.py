@@ -176,8 +176,8 @@ def loadModel(
 
     if load_pretrained_weights:
         model_path = loadModelPath()
-        model_directory = os.path.join(*model_path.split('/')[:-1])
         checkpoint = torch.load(model_path)
+        old_model_directory = os.path.dirname(model_path)
         for i in range(len(model)):
             model[i].load_state_dict(checkpoint[f"model_{i}"])
             model[i].eval()
@@ -188,12 +188,14 @@ def loadModel(
                 optimizer[i].load_state_dict(checkpoint[f"optimizer_{i}"])
             print("Optimizer state loaded")
             validation_loss_min = checkpoint["valid_loss"]
-            log_files = glob.glob(os.path.join(model_directory, "*.csv"))
+            log_files = glob.glob(os.path.join(old_model_directory, "*.csv"))
             if len(log_files):
                 start_epoch = int(pd.read_csv(
                     log_files[0])["epoch"].to_list()[-1]) + 1
         else:
             print("Optimizer state not loaded")
+        if not CONFIG.CREATE_NEW_MODEL_PATH:
+            model_directory = old_model_directory
         print("Loaded model: {}".format(model_path))
 
     return start_epoch, model_directory, validation_loss_min

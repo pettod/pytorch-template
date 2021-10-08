@@ -21,6 +21,7 @@ class CONFIG:
     # General parameters
     LOAD_MODEL = False
     LOAD_OPTIMIZER_STATE = True
+    CREATE_NEW_MODEL_PATH = True
     MODEL_PATH = None
     DROP_LAST_BATCH = False
     NUMBER_OF_DATALOADER_WORKERS = cpu_count()
