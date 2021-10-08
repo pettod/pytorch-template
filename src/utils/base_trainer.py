@@ -3,6 +3,7 @@ import torch.nn as nn
 from tqdm import trange
 
 from config import CONFIG
+from src.loss_functions import costFunction
 import src.utils.callbacks as cb
 import src.utils.utils as ut
 
@@ -17,7 +18,7 @@ class Basetrainer():
             nn.DataParallel(m).to(CONFIG.DEVICE) for m in CONFIG.MODELS]
         self.optimizers = CONFIG.OPTIMIZERS
         self.schedulers = CONFIG.SCHEDULERS
-        self.loss_function = CONFIG.LOSS_FUNCTION
+        self.loss_function = costFunction
 
         # Callbacks
         self.start_epoch, self.model_directory, validation_loss_min = \

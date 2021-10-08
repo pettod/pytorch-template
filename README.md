@@ -24,7 +24,7 @@ Things needed to be changed in a new project:
 
 1. `src/trainer.py`: If your data is more complex, implement `trainIteration` and `validationIteration` member functions.
 
-1. `src/loss_functions.py`: Define loss function.
+1. `src/loss_functions.py`: Define loss function inside `costFunction`.
 
 1. `src/metrics.py`: Create metric functions that take only 2 inputs (prediction and ground truth). These functions are used automatically in the code.
 

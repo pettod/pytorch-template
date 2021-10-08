@@ -5,7 +5,6 @@ import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from src.loss_functions import costFunction as lossFunction
 from src.network import Net
 
 
@@ -20,7 +19,6 @@ class CONFIG:
     VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
 
     # General parameters
-    EPOCHS = 1000
     LOAD_MODEL = False
     LOAD_OPTIMIZER_STATE = True
     MODEL_PATH = None
@@ -29,7 +27,7 @@ class CONFIG:
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Hyperparameters
-    LOSS_FUNCTION = lossFunction
+    EPOCHS = 1000
     BATCH_SIZE = 16
     PATCH_SIZE = 256
     PATIENCE = 20
