@@ -227,10 +227,9 @@ def toDevice(batch):
     return batch
 
 
-def saveTensorImage(test_image, save_path):
-    image = np.moveaxis(test_image.cpu().numpy(), 0, -1) * 255
+def saveTensorImage(image, save_path):
+    image = (np.moveaxis(image.cpu().numpy(), 0, -1) * 255).astype(np.uint8)
     save_directory = os.path.dirname(save_path)
     if not os.path.isdir(save_directory):
         os.makedirs(save_directory)
-    cv2.imwrite(
-        save_path, cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2BGR))
+    cv2.imwrite(save_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))

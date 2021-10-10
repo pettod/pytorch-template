@@ -31,7 +31,7 @@ class Basetrainer():
         self.early_stopping = cb.EarlyStopping(
             self.model_directory, CONFIG.PATIENCE,
             validation_loss_min=validation_loss_min)
-        self.tensorboard_writer = SummaryWriter(self.model_directory)
+        self.tensorboard_writer = None
 
         # Train and validation batch generators
         self.train_dataloader = ut.getDataloader(train_dataset)
@@ -48,6 +48,8 @@ class Basetrainer():
         ut.saveLearningCurve(model_directory=self.model_directory)
 
         # Update Tensorboard
+        if self.tensorboard_writer is None:
+            self.tensorboard_writer = SummaryWriter(self.model_directory)
         for key, value in self.epoch_metrics.items():
             if key != "epoch":
                 loop_metric = key.split('_')
@@ -96,6 +98,7 @@ class Basetrainer():
                 "test_images",
                 f"epoch_{epoch}_{image_name}.png")
             ut.saveTensorImage(test_image, save_path)
+            self.tensorboard_writer.add_image("test_image", test_image, epoch)
 
     def train(self):
         for epoch in range(self.start_epoch, self.epochs+1):
