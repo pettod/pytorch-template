@@ -44,5 +44,5 @@ class CONFIG:
         optim.Adam(MODELS[0].parameters(), lr=LEARNING_RATES[0]),
     ]
     SCHEDULERS = [
-        ReduceLROnPlateau(OPTIMIZERS[0], "min", 0.3, PATIENCE//3, min_lr=1e-8),
+        ReduceLROnPlateau(OPTIMIZERS[0], "min", 0.3, 6, min_lr=1e-8),
     ]

@@ -2,6 +2,7 @@ import os
 import torch
 import torch.nn as nn
 from tqdm import trange
+from torch.utils.tensorboard import SummaryWriter
 
 from config import CONFIG
 from src.loss_functions import costFunction
@@ -30,6 +31,7 @@ class Basetrainer():
         self.early_stopping = cb.EarlyStopping(
             self.model_directory, CONFIG.PATIENCE,
             validation_loss_min=validation_loss_min)
+        self.tensorboard_writer = SummaryWriter(self.model_directory)
 
         # Train and validation batch generators
         self.train_dataloader = ut.getDataloader(train_dataset)
@@ -44,6 +46,14 @@ class Basetrainer():
         for s in self.schedulers:
             s.step(self.epoch_metrics["valid_loss"])
         ut.saveLearningCurve(model_directory=self.model_directory)
+
+        # Update Tensorboard
+        for key, value in self.epoch_metrics.items():
+            if key != "epoch":
+                loop_metric = key.split('_')
+                self.tensorboard_writer.add_scalar(
+                    "{}/{}".format(loop_metric[1], loop_metric[0]),
+                    value, self.epoch_metrics["epoch"])
 
     def validationEpoch(self):
         print()
