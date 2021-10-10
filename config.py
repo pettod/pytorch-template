@@ -17,6 +17,7 @@ class CONFIG:
     TRAIN_Y_DIR = os.path.join(DATA_ROOT, "train_sharp/")
     VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
     VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
+    TEST_IMAGE_PATH = None
 
     # General parameters
     LOAD_MODEL = False
@@ -31,7 +32,7 @@ class CONFIG:
     EPOCHS = 1000
     BATCH_SIZE = 16
     PATCH_SIZE = 256
-    PATIENCE = 20
+    PATIENCE = 30
     LEARNING_RATES = [1e-4]
     ITERATIONS_PER_EPOCH = 1
 

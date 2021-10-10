@@ -1,3 +1,4 @@
+import cv2
 import glob
 import os
 import sys
@@ -9,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
 
 from config import CONFIG
 import src.metrics as metrics
@@ -225,3 +225,12 @@ def toDevice(batch):
     else:
         batch = batch.to(CONFIG.DEVICE)
     return batch
+
+
+def saveTensorImage(test_image, save_path):
+    image = np.moveaxis(test_image.cpu().numpy(), 0, -1) * 255
+    save_directory = os.path.dirname(save_path)
+    if not os.path.isdir(save_directory):
+        os.makedirs(save_directory)
+    cv2.imwrite(
+        save_path, cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2BGR))

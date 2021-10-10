@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 from tqdm import trange
@@ -75,9 +76,21 @@ class Basetrainer():
                 progress_bar.display(
                     ut.getProgressbarText(self.epoch_metrics, "Train"), 1)
 
+    def testModel(self, epoch):
+        if CONFIG.TEST_IMAGE_PATH is not None:
+            with torch.no_grad():
+                test_image = self.testAfterEpoch()
+            image_name = os.path.basename(CONFIG.TEST_IMAGE_PATH).split('.')[0]
+            save_path = os.path.join(
+                self.model_directory,
+                "test_images",
+                f"epoch_{epoch}_{image_name}.png")
+            ut.saveTensorImage(test_image, save_path)
+
     def train(self):
         for epoch in range(self.start_epoch, self.epochs+1):
             if self.early_stopping.isEarlyStop():
                 break
             self.epoch_metrics = ut.initializeEpochMetrics(epoch)
             self.trainEpoch(epoch)
+            self.testModel(epoch)
