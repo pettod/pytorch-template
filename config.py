@@ -12,28 +12,24 @@ DATA_ROOT = os.path.realpath("../input/REDS")
 
 
 class CONFIG:
-    # Paths
+    # Data paths
     TRAIN_X_DIR = os.path.join(DATA_ROOT, "train_blur/")
     TRAIN_Y_DIR = os.path.join(DATA_ROOT, "train_sharp/")
     VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
     VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
     TEST_IMAGE_PATH = None
 
-    # General parameters
+    # Model loading
     LOAD_MODEL = False
     LOAD_OPTIMIZER_STATE = True
     CREATE_NEW_MODEL_PATH = True
     MODEL_PATH = None
-    DROP_LAST_BATCH = False
-    NUMBER_OF_DATALOADER_WORKERS = cpu_count()
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Hyperparameters
     EPOCHS = 1000
     BATCH_SIZE = 16
     PATCH_SIZE = 256
     PATIENCE = 30
-    LEARNING_RATES = [1e-4]
     ITERATIONS_PER_EPOCH = 1
 
     # Model
@@ -41,8 +37,13 @@ class CONFIG:
         Net(),
     ]
     OPTIMIZERS = [
-        optim.Adam(MODELS[0].parameters(), lr=LEARNING_RATES[0]),
+        optim.Adam(MODELS[0].parameters(), lr=1e-4),
     ]
     SCHEDULERS = [
         ReduceLROnPlateau(OPTIMIZERS[0], "min", 0.3, 6, min_lr=1e-8),
     ]
+
+    # General parameters
+    DROP_LAST_BATCH = False
+    NUMBER_OF_DATALOADER_WORKERS = cpu_count()
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
