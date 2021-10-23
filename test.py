@@ -4,13 +4,14 @@ import os
 import time
 import torch
 import torch.nn as nn
+from imco import compareImages
+from importlib import import_module
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # Project files
 from src.dataset import ImageDataset
-from src.network import Net
 from src.utils.utils import loadModel
 
 # Data paths
@@ -19,10 +20,18 @@ VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
 VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
 
 # Model parameters
-MODEL_PATH = None
-BATCH_SIZE = 4
+MODEL_PATHS = [
+    "saved_models/2021-10-10_213030",
+    "saved_models/2021-10-10_213030",
+]
+NAMES = [
+    "Input",
+    "model 1",
+    "model 2",
+    "Ground truth",
+]
 PATCH_SIZE = 256
-NUMBER_OF_DATALOADER_WORKERS = 8
+DEVICE = torch.device("cuda")
 
 
 def main():
@@ -30,40 +39,41 @@ def main():
     valid_transforms = transforms.Compose([
         transforms.CenterCrop(PATCH_SIZE),
         transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.5, 0.5, 0.5],
-            std=[0.5, 0.5, 0.5]),
     ])
     valid_dataset = ImageDataset(VALID_X_DIR, VALID_Y_DIR, valid_transforms)
     valid_dataloader = DataLoader(
-        valid_dataset, batch_size=BATCH_SIZE, shuffle=False,
-        num_workers=NUMBER_OF_DATALOADER_WORKERS)
-
-    # Device (CPU / CUDA)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if not torch.cuda.is_available():
-        print("WARNING: Running on CPU")
+        valid_dataset, batch_size=4, shuffle=False, num_workers=8)
 
     # Save directory
     save_directory = os.path.join(
         "predictions", time.strftime("%Y-%m-%d_%H%M%S"))
-    if not os.path.isdir(save_directory):
-        os.makedirs(save_directory)
-
-    # Predict and save
     with torch.no_grad():
-        model = nn.DataParallel(Net()).to(device)
-        loadModel(model, model_path=MODEL_PATH)
-        for i, (X, y) in enumerate(tqdm(valid_dataloader)):
-            X, y = X.to(device), y.numpy()
-            output = model(X).cpu().numpy()
-            X = X.cpu().numpy()
-            for j in range(X.shape[0]):
-                concat_image = np.moveaxis(np.concatenate(
-                    [X[j], output[j], y[j]], axis=-1), 0, -1) * 255
+
+        # Load models
+        models = []
+        for model_path in MODEL_PATHS:
+            config = import_module(os.path.join(
+                model_path, "config").replace('/', '.')).CONFIG
+            model = nn.DataParallel(config.MODELS[0]).to(DEVICE)
+            loadModel(model, model_path=model_path)
+            models.append(model)
+
+        # Predict and save
+        for i, (x, y) in enumerate(tqdm(valid_dataloader)):
+            x, y = x.to(DEVICE), y.numpy()
+            predictions = [m(x).cpu().numpy() for m in models]
+            x += 1
+            x /= 2
+            x = x.cpu().numpy()
+            for j in range(x.shape[0]):
+                images = [x[j]] + [p[j] for p in predictions] + [y[j]]
+                images = [(255 * np.moveaxis(img, 0, -1)).astype(np.uint8) for img in images]
+                concat_image = compareImages(images, NAMES, True).astype(np.uint8)
+                if not os.path.isdir(save_directory):
+                    os.makedirs(save_directory)
                 cv2.imwrite(os.path.join(
                     save_directory, f"{i}_{j}.png"), cv2.cvtColor(
-                        concat_image.astype(np.uint8), cv2.COLOR_RGB2BGR))
+                        concat_image, cv2.COLOR_RGB2BGR))
 
 
 main()
