@@ -198,7 +198,7 @@ def loadModel(
                     log_files[0])["epoch"].to_list()[-1]) + 1
         else:
             print("Optimizer state not loaded")
-        if not CONFIG.CREATE_NEW_MODEL_PATH:
+        if not CONFIG.CREATE_NEW_MODEL_DIR:
             model_directory = old_model_directory
         print("Loaded model: {}".format(model_path))
 

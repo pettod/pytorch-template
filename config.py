@@ -27,9 +27,9 @@ class CONFIG:
 
     # Model loading
     LOAD_MODEL = False
-    LOAD_OPTIMIZER_STATE = True
-    CREATE_NEW_MODEL_PATH = True
     MODEL_PATH = None
+    LOAD_OPTIMIZER_STATE = True
+    CREATE_NEW_MODEL_DIR = True
 
     # Hyperparameters
     EPOCHS = 1000
