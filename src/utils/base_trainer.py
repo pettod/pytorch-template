@@ -5,7 +5,6 @@ from tqdm import trange
 from torch.utils.tensorboard import SummaryWriter
 
 from config import CONFIG
-from src.loss_functions import costFunction
 import src.utils.callbacks as cb
 import src.utils.utils as ut
 
@@ -20,7 +19,8 @@ class Basetrainer():
             nn.DataParallel(m).to(CONFIG.DEVICE) for m in CONFIG.MODELS]
         self.optimizers = CONFIG.OPTIMIZERS
         self.schedulers = CONFIG.SCHEDULERS
-        self.loss_function = costFunction
+        self.loss_functions = CONFIG.LOSS_FUNCTIONS
+        self.loss_weights = CONFIG.LOSS_WEIGHTS
 
         # Callbacks
         self.start_epoch, self.model_directory, validation_loss_min = \
@@ -38,6 +38,10 @@ class Basetrainer():
         self.valid_dataloader = ut.getDataloader(valid_dataset, shuffle=False)
         self.number_of_train_batches = ut.getIterations(self.train_dataloader)
         self.number_of_valid_batches = len(self.valid_dataloader)
+
+    def costFunction(self, predction, y):
+        return sum([l(predction, y) * w for l, w in zip(
+            self.loss_functions, self.loss_weights)])
 
     def logData(self):
         self.csv_logger.__call__(self.epoch_metrics)

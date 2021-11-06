@@ -2,11 +2,7 @@ import torch
 import torch.nn.functional as F
 
 
-def costFunction(y_pred, y_true):
-    return maeGradientPlusMae(y_pred, y_true)
-
-
-def meanAbsoluteGradientError(y_pred, y_true):
+def sobelLoss(y_pred, y_true):
     b, c, h, w = y_true.shape
     sobel_kernel_x = torch.tensor([
         [-1., 0., 1.],
@@ -26,10 +22,5 @@ def meanAbsoluteGradientError(y_pred, y_true):
     return torch.mean(gradients_error_x + gradients_error_y)
 
 
-def maeGradientPlusMae(y_pred, y_true):
-    if y_true.shape != y_pred.shape:
-        new_shape = y_true.shape[-2:]
-        y_pred = F.interpolate(y_pred, new_shape, mode="bilinear")
-    mae = torch.mean(torch.abs(y_true - y_pred))
-    edges = meanAbsoluteGradientError(y_true, y_pred)
-    return mae + edges
+def l1(y_pred, y_true):
+    return torch.mean(torch.abs(y_true - y_pred))

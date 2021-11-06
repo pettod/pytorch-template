@@ -10,6 +10,7 @@ from torchvision.transforms import (
 )
 
 from src.dataset import ImageDataset as Dataset
+from src.loss_functions import l1, sobelLoss
 from src.network import Net
 
 
@@ -47,6 +48,10 @@ class CONFIG:
     SCHEDULERS = [
         ReduceLROnPlateau(OPTIMIZERS[0], "min", 0.3, 6, min_lr=1e-8),
     ]
+
+    # Cost function
+    LOSS_FUNCTIONS = [l1, sobelLoss]
+    LOSS_WEIGHTS = [1, 1]
 
     # Transforms and dataset
     TRAIN_TRANSFORM = Compose([
