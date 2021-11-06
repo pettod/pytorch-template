@@ -75,7 +75,7 @@ class EarlyStopping:
     def __call__(self, epoch_metrics, model, optimizer):
         createSaveModelDirectory(self.save_directory)
         self.moveNetworkConfigToSaveDirectory()
-        valid_loss = epoch_metrics["valid_loss"]
+        valid_loss = epoch_metrics["valid_total-loss"]
         score = -valid_loss
         if self.best_score is None:
             self.best_score = score
@@ -106,7 +106,7 @@ class EarlyStopping:
         )
         if self.verbose:
             print("Validation loss decreased. Model saved")
-        self.valid_loss_min = epoch_metrics["valid_loss"]
+        self.valid_loss_min = epoch_metrics["valid_total-loss"]
 
     def isEarlyStop(self):
         if self.early_stop:

@@ -13,14 +13,14 @@ class Trainer(Basetrainer):
         return prediction, y, loss
 
     def validationIteration(self, batch):
-        return self.forwardPropagation(batch)
+        return self.forwardPropagation(batch)[:2]
 
     def trainIteration(self, batch):
         prediction, y, loss = self.forwardPropagation(batch)
         self.models[0].zero_grad()
         loss.backward()
         self.optimizers[0].step()
-        return prediction, y, loss
+        return prediction, y
 
     def testAfterEpoch(self):
         x = Image.open(CONFIG.TEST_IMAGE_PATH).convert("RGB")

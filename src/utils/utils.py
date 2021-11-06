@@ -31,29 +31,28 @@ def computeMetrics(y_pred, y_true):
 
 
 def initializeEpochMetrics(epoch):
-    metric_functions = getMetrics()
     epoch_metrics = {}
     epoch_metrics["epoch"] = epoch
-    epoch_metrics["train_loss"] = 0
-    epoch_metrics["valid_loss"] = 0
-    for metric_name, _ in metric_functions:
-        epoch_metrics[f"train_{metric_name}"] = 0
-        epoch_metrics[f"valid_{metric_name}"] = 0
     return epoch_metrics
 
 
 def updateEpochMetrics(
-        y_pred, y_true, loss, epoch_iteration_index, epoch_metrics, mode,
+        y_pred, y_true, losses, epoch_iteration_index, epoch_metrics, mode,
         optimizer=None):
     metric_scores = computeMetrics(y_pred, y_true)
-    metric_scores["loss"] = loss
+    metric_scores.update(losses)
+    #print(metric_scores)
     for key, value in metric_scores.items():
         if type(value) == torch.Tensor:
             value = value.item()
 
-        epoch_metrics[f"{mode}_{key}"] += ((
-            value - epoch_metrics[f"{mode}_{key}"]) /
-            (epoch_iteration_index + 1))
+        used_key = f"{mode}_{key}"
+        if used_key in epoch_metrics:
+            epoch_metrics[used_key] += ((
+                value - epoch_metrics[f"{mode}_{key}"]) /
+                (epoch_iteration_index + 1))
+        else:
+            epoch_metrics[used_key] = value
     if optimizer:
         if type(optimizer) == list:
             for i, optim in enumerate(optimizer):
@@ -191,7 +190,7 @@ def loadModel(
             for i in range(len(optimizer)):
                 optimizer[i].load_state_dict(checkpoint[f"optimizer_{i}"])
             print("Optimizer state loaded")
-            validation_loss_min = checkpoint["valid_loss"]
+            validation_loss_min = checkpoint["valid_total-loss"]
             log_files = glob.glob(os.path.join(old_model_directory, "*.csv"))
             if len(log_files):
                 start_epoch = int(pd.read_csv(
