@@ -4,7 +4,12 @@ from multiprocessing import cpu_count
 import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torchvision.transforms import (
+    Compose, CenterCrop, RandomCrop, RandomHorizontalFlip, RandomVerticalFlip,
+    ToTensor, Normalize
+)
 
+from src.dataset import ImageDataset as Dataset
 from src.network import Net
 
 
@@ -42,6 +47,22 @@ class CONFIG:
     SCHEDULERS = [
         ReduceLROnPlateau(OPTIMIZERS[0], "min", 0.3, 6, min_lr=1e-8),
     ]
+
+    # Transforms and dataset
+    TRAIN_TRANSFORM = Compose([
+        RandomCrop(PATCH_SIZE),
+        RandomHorizontalFlip(),
+        RandomVerticalFlip(),
+        ToTensor(),
+    ])
+    VALID_TRANSFORM = Compose([
+        CenterCrop(PATCH_SIZE),
+        ToTensor(),
+    ])
+    TEST_TRANSFORM = ToTensor()
+    INPUT_NORMALIZE = Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    TRAIN_DATASET = Dataset(TRAIN_X_DIR, TRAIN_Y_DIR, TRAIN_TRANSFORM, INPUT_NORMALIZE)
+    VALID_DATASET = Dataset(VALID_X_DIR, VALID_Y_DIR, VALID_TRANSFORM, INPUT_NORMALIZE)
 
     # General parameters
     DROP_LAST_BATCH = False

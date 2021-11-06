@@ -1,5 +1,4 @@
 from PIL import Image
-from torchvision.transforms import ToTensor, Normalize, Compose
 
 from config import CONFIG
 from src.utils.base_trainer import Basetrainer
@@ -24,12 +23,6 @@ class Trainer(Basetrainer):
         return prediction, y, loss
 
     def testAfterEpoch(self):
-        test_transforms = Compose([
-            ToTensor(),
-            Normalize(
-                mean=[0.5, 0.5, 0.5],
-                std=[0.5, 0.5, 0.5])
-        ])
         x = Image.open(CONFIG.TEST_IMAGE_PATH).convert("RGB")
-        x = test_transforms(x).unsqueeze(0)
-        return self.models[0](x).squeeze(0)
+        x = CONFIG.INPUT_NORMALIZE(CONFIG.TEST_TRANSFORM(x))
+        return self.models[0](x.unsqueeze(0)).squeeze(0)
