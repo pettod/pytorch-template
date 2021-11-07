@@ -22,6 +22,16 @@ class Basetrainer():
         self.schedulers = CONFIG.SCHEDULERS
         self.loss_functions = CONFIG.LOSS_FUNCTIONS
         self.loss_weights = CONFIG.LOSS_WEIGHTS
+        self.use_gan = CONFIG.USE_GAN
+        if self.use_gan:
+            self.discriminator = nn.DataParallel(
+                CONFIG.DISCRIMINATOR).to(CONFIG.DEVICE)
+            self.discriminator = CONFIG.DISCRIMINATOR
+            self.dis_optimizer = CONFIG.DIS_OPTIMIZER
+            self.dis_scheduler = CONFIG.DIS_SCHEDULER
+            self.dis_loss = CONFIG.DIS_LOSS
+            self.dis_loss_weight = CONFIG.DIS_LOSS_WEIGHT
+
 
         # Callbacks
         self.start_epoch, self.model_directory, validation_loss_min = \
@@ -46,9 +56,30 @@ class Basetrainer():
             loss = l(predction, y) * w
             losses.append(loss)
             self.iteration_losses[l.__name__] = loss
+        if self.use_gan:
+            self.discriminator.zero_grad()
+            gen_dis_prediction = self.discriminator(predction)
+            gen_gan_loss = self.dis_loss(gen_dis_prediction, True)
+            losses.append(gen_gan_loss)
+            self.iteration_losses["gen-gan-loss"] = gen_gan_loss
         total_loss = sum(losses)
         self.iteration_losses["total-loss"] = total_loss
         return total_loss
+
+    def discriminatorLoss(self, prediction, y):
+        gen_dis_prediction = self.discriminator(prediction.detach())
+        true_dis_prediction = self.discriminator(y)
+        dis_gan_loss = \
+            self.dis_loss(true_dis_prediction, True) + \
+            self.dis_loss(gen_dis_prediction, False)
+        return dis_gan_loss
+
+    def trainDiscriminator(self, prediction, y):
+        self.discriminator.zero_grad()
+        dis_gan_loss = self.discriminatorLoss(prediction, y)
+        dis_gan_loss.backward()
+        self.dis_optimizer.step()
+        self.iteration_losses["dis-gan-loss"] = dis_gan_loss
 
     def logData(self):
         self.csv_logger.__call__(self.epoch_metrics)
@@ -56,6 +87,8 @@ class Basetrainer():
             self.epoch_metrics, self.models, self.optimizers)
         for s in self.schedulers:
             s.step(self.epoch_metrics["valid_total-loss"])
+        if self.use_gan:
+            self.dis_scheduler.step(self.epoch_metrics["valid_dis-gan-loss"])
         ut.saveLearningCurve(model_directory=self.model_directory)
 
         # Update Tensorboard
@@ -74,6 +107,9 @@ class Basetrainer():
         progress_bar.set_description(" Validation")
         for i, batch in zip(progress_bar, self.valid_dataloader):
             prediction, y = self.validationIteration(batch)
+            if self.use_gan:
+                dis_gan_loss = self.discriminatorLoss(prediction, y)
+                self.iteration_losses["dis-gan-loss"] = dis_gan_loss
             ut.updateEpochMetrics(
                 prediction, y, self.iteration_losses, i, self.epoch_metrics,
                 "valid", self.optimizers)
@@ -91,6 +127,8 @@ class Basetrainer():
                 with torch.no_grad():
                     self.validationEpoch()
             prediction, y = self.trainIteration(batch)
+            if self.use_gan:
+                self.trainDiscriminator(prediction, y)
 
             # Compute metrics, print progress bar
             with torch.no_grad():

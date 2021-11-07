@@ -41,7 +41,6 @@ def updateEpochMetrics(
         optimizer=None):
     metric_scores = computeMetrics(y_pred, y_true)
     metric_scores.update(losses)
-    #print(metric_scores)
     for key, value in metric_scores.items():
         if type(value) == torch.Tensor:
             value = value.item()

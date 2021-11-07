@@ -47,15 +47,21 @@ class EarlyStopping:
             "tmp", self.save_directory.split(os.sep)[-1])
         self.saved_files = [
             "config.py",
-            "src/network.py",
+            "src/architectures",
             "src/loss_functions.py",
         ]
         self.saveNetworkConfig()
 
     def saveNetworkConfig(self):
-        os.makedirs(self.tmp_folder, exist_ok=True)
+        code_file_save_folder = os.path.join(self.tmp_folder, "codes")
+        os.makedirs(code_file_save_folder, exist_ok=True)
         for file_path in self.saved_files:
-            copy(file_path, self.tmp_folder)
+            if os.path.isdir(file_path):
+                folder_file_paths = glob(os.path.join(file_path, "*.py"))
+                for folder_file_path in folder_file_paths:
+                    copy(folder_file_path, code_file_save_folder)
+            else:
+                copy(file_path, code_file_save_folder)
 
     def moveNetworkConfigToSaveDirectory(self):
         # 'tmp/' folder exists

@@ -10,8 +10,9 @@ from torchvision.transforms import (
 )
 
 from src.dataset import ImageDataset as Dataset
-from src.loss_functions import l1, sobelLoss
-from src.network import Net
+from src.loss_functions import l1, sobelLoss, GANLoss
+from src.architectures.discriminator import UNetDiscriminatorSN
+from src.architectures.model import Net
 
 
 DATA_ROOT = os.path.realpath("../input/REDS")
@@ -48,6 +49,14 @@ class CONFIG:
     SCHEDULERS = [
         ReduceLROnPlateau(OPTIMIZERS[0], "min", 0.3, 6, min_lr=1e-8),
     ]
+
+    # GAN
+    USE_GAN = False
+    DISCRIMINATOR = UNetDiscriminatorSN(3)
+    DIS_OPTIMIZER = optim.Adam(DISCRIMINATOR.parameters(), lr=1e-4)
+    DIS_SCHEDULER = ReduceLROnPlateau(DIS_OPTIMIZER, "min", 0.3, 6, min_lr=1e-8)
+    DIS_LOSS = GANLoss("vanilla")
+    DIS_LOSS_WEIGHT = 1
 
     # Cost function
     LOSS_FUNCTIONS = [l1, sobelLoss]
