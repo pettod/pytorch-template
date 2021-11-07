@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from inspect import getmembers, isfunction
-from math import ceil
+from math import ceil, sqrt
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -123,9 +123,11 @@ def saveLearningCurve(
     plt.figure(figsize=(15, 7))
     import warnings
     warnings.filterwarnings("ignore")
+    grid_x = int(sqrt(number_of_subplots))
+    grid_y = ceil(number_of_subplots / grid_x)
     for i, key in enumerate(log_data.keys()):
         metric = key.split('_')[-1]
-        plt.subplot(1, number_of_subplots, figure_dict[metric])
+        plt.subplot(grid_x, grid_y, figure_dict[metric])
         plt.plot(range(number_of_epochs), log_data[key], label=key)
         plt.xticks(used_xticks, epoch_string_data)
         plt.xlabel("Epoch")
