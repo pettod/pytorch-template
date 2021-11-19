@@ -50,15 +50,19 @@ class Basetrainer():
         self.number_of_train_batches = ut.getIterations(self.train_dataloader)
         self.number_of_valid_batches = len(self.valid_dataloader)
 
-    def costFunction(self, predction, y):
+    def costFunction(self, prediction, y):
         losses = []
         for l, w in zip(self.loss_functions, self.loss_weights):
-            loss = l(predction, y) * w
+            loss = l(prediction, y) * w
             losses.append(loss)
-            self.iteration_losses[l.__name__] = loss
+            if str(type(l)) == "<class 'function'>":
+                loss_name = l.__name__
+            else:
+                loss_name = l.__class__.__name__
+            self.iteration_losses[loss_name] = loss
         if self.use_gan:
             self.discriminator.zero_grad()
-            gen_dis_prediction = self.discriminator(predction)
+            gen_dis_prediction = self.discriminator(prediction)
             gen_gan_loss = self.dis_loss(gen_dis_prediction, True)
             losses.append(gen_gan_loss)
             self.iteration_losses["gen-gan-loss"] = gen_gan_loss
