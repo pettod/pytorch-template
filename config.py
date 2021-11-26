@@ -50,6 +50,18 @@ class CONFIG:
         ReduceLROnPlateau(OPTIMIZERS[0], "min", 0.3, 6, min_lr=1e-8),
     ]
 
+    # Model loading
+    LOAD_MODELS = [
+        False,
+    ]
+    MODEL_PATHS = [
+        None,
+    ]
+    LOAD_OPTIMIZER_STATES = [
+        False,
+    ]
+    CREATE_NEW_MODEL_DIR = True
+
     # GAN
     USE_GAN = False
     DISCRIMINATOR = UNetDiscriminatorSN(3)
@@ -57,6 +69,11 @@ class CONFIG:
     DIS_SCHEDULER = ReduceLROnPlateau(DIS_OPTIMIZER, "min", 0.3, 6, min_lr=1e-8)
     DIS_LOSS = GANLoss("vanilla")
     DIS_LOSS_WEIGHT = 1
+
+    # Load GAN
+    LOAD_GAN = False
+    DIS_PATH = None
+    LOAD_DIS_OPTIMIZER_STATE = False
 
     # Cost function
     LOSS_FUNCTIONS = [l1, sobelLoss]

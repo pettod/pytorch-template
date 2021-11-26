@@ -1,8 +1,8 @@
 import cv2
-import glob
 import os
 import sys
 import time
+from glob import glob
 from inspect import getmembers, isfunction
 from math import ceil, sqrt
 
@@ -75,10 +75,10 @@ def saveLearningCurve(
         xticks_limit=13):
     # Read CSV log file
     if log_file_path is None and model_directory is None:
-        log_file_path = sorted(glob.glob(os.path.join(
+        log_file_path = sorted(glob(os.path.join(
             model_root, *['*', "*.csv"])))[-1]
     elif model_directory is not None:
-        log_file_path = glob.glob(os.path.join(
+        log_file_path = glob(os.path.join(
             model_directory, "*.csv"))[0]
     log_file = pd.read_csv(log_file_path)
 
@@ -138,39 +138,39 @@ def saveLearningCurve(
 
 
 def loadModel(
-        model, load_pretrained_weights=True, model_path=None, optimizer=None,
-        model_root="saved_models"):
+        model, load_pretrained_weights=True, model_path=None,
+        model_file_name="*.pt", optimizer=None, load_optimizer_state=False,
+        model_root="saved_models", create_new_model_directory=True):
     def loadModelPath():
+        model_directories = sorted(glob(os.path.join(model_root, '*')))
+
         # Load latest model
         if model_path is None:
-            model_name = sorted(glob.glob(os.path.join(
-                model_root, *['*', "*.pt"])))[-1]
+            full_model_path = sorted(glob(os.path.join(
+                model_directories[-1], model_file_name)))
+
+        # Load model based on index
+        elif type(model_path) == int:
+            full_model_path = sorted(glob(os.path.join(
+                model_directories[model_path], model_file_name)))
+
+        # Only folder name given
+        elif '/' not in model_path and '.' not in model_path:
+            full_model_path = glob(os.path.join(
+                model_root, model_path, model_file_name))
+
+        # Only folder name given
+        elif '/' in model_path and '.' not in model_path:
+            full_model_path = glob(os.path.join(model_path, model_file_name))
+
+        # Load defined model path
         else:
+            full_model_path = [model_path]
+        return full_model_path[0]
 
-            # Load model based on index
-            if type(model_path) == int:
-                model_name = sorted(glob.glob(os.path.join(
-                    model_root, *['*', "*.pt"])))[model_path]
-
-            # Only folder name given
-            elif '/' not in model_path and '.' not in model_path:
-                model_name = glob.glob(os.path.join(
-                    model_root, model_path, "*.pt"))[0]
-
-            # Only folder name given
-            elif '/' in model_path and '.' not in model_path:
-                model_name = glob.glob(os.path.join(model_path, "*.pt"))[0]
-
-            # Load defined model path
-            else:
-                model_name = model_path
-        return model_name
-
-    if type(model) != list:
-        model = [model]
-    for i in range(len(model)):
-        print("{:,} model parameters".format(
-            sum(p.numel() for p in model[i].parameters() if p.requires_grad)))
+    print("{:,} model ({}) parameters".format(
+        sum(p.numel() for p in model.parameters() if p.requires_grad),
+        model_file_name.split('.')[0]))
     validation_loss_min = np.Inf
     start_epoch = 1
     model_directory = os.path.join(
@@ -179,28 +179,27 @@ def loadModel(
         model_directory = f"{model_directory}_{sys.argv[1]}"
 
     if load_pretrained_weights:
-        model_path = loadModelPath()
-        checkpoint = torch.load(model_path)
-        old_model_directory = os.path.dirname(model_path)
-        for i in range(len(model)):
-            model[i].load_state_dict(checkpoint[f"model_{i}"])
-            model[i].eval()
-        if optimizer and CONFIG.LOAD_OPTIMIZER_STATE:
-            if type(optimizer) != list:
-                optimizer = [optimizer]
-            for i in range(len(optimizer)):
-                optimizer[i].load_state_dict(checkpoint[f"optimizer_{i}"])
+        full_model_path = loadModelPath()
+        old_model_directory = os.path.dirname(full_model_path)
+        model.load_state_dict(torch.load(full_model_path))
+        model.eval()
+        print("Loaded pretrained weights: {}".format(full_model_path))
+        if optimizer and load_optimizer_state:
+            checkpoint = torch.load(os.path.join(old_model_directory, "checkpoint.ckpt"))
+            optimizer.load_state_dict(checkpoint[f"optimizer_{int(full_model_path[-4])}"])
             print("Optimizer state loaded")
             validation_loss_min = checkpoint["valid_total-loss"]
-            log_files = glob.glob(os.path.join(old_model_directory, "*.csv"))
+            log_files = glob(os.path.join(old_model_directory, "*.csv"))
             if len(log_files):
                 start_epoch = int(pd.read_csv(
                     log_files[0])["epoch"].to_list()[-1]) + 1
         else:
             print("Optimizer state not loaded")
-        if not CONFIG.CREATE_NEW_MODEL_DIR:
+        if not create_new_model_directory:
             model_directory = old_model_directory
-        print("Loaded model: {}".format(model_path))
+    else:
+        print("Not loaded pretrained weights")
+    print()
 
     return start_epoch, model_directory, validation_loss_min
 

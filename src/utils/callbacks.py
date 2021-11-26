@@ -64,8 +64,8 @@ class EarlyStopping:
                 copy(file_path, code_file_save_folder)
 
     def moveNetworkConfigToSaveDirectory(self):
-        # 'tmp/' folder exists
-        if os.path.isdir(self.tmp_folder):
+        # 'tmp/' folder exists but save directory doesn't
+        if os.path.isdir(self.tmp_folder) and not os.path.isdir(self.save_directory):
 
             # Loop each file in 'tmp/' folder
             for file_path in glob(os.path.join(self.tmp_folder, '*')):
@@ -78,14 +78,16 @@ class EarlyStopping:
             # Remove 'tmp/' folder (even with files inside)
             rmtree(self.tmp_folder, ignore_errors=True)
 
-    def __call__(self, epoch_metrics, model, optimizer):
+    def __call__(
+            self, epoch_metrics, model, optimizer, last_discriminator=False):
         createSaveModelDirectory(self.save_directory)
         self.moveNetworkConfigToSaveDirectory()
         valid_loss = epoch_metrics["valid_total-loss"]
         score = -valid_loss
         if self.best_score is None:
             self.best_score = score
-            self.saveCheckpoint(epoch_metrics, model, optimizer)
+            self.saveCheckpoint(
+                epoch_metrics, model, optimizer, last_discriminator)
         elif score < self.best_score + self.delta:
             self.counter += 1
             print(f"EarlyStopping counter: {self.counter}/{self.patience}")
@@ -93,22 +95,31 @@ class EarlyStopping:
                 self.early_stop = True
         else:
             self.best_score = score
-            self.saveCheckpoint(epoch_metrics, model, optimizer)
+            self.saveCheckpoint(
+                epoch_metrics, model, optimizer, last_discriminator)
             self.counter = 0
 
-    def saveCheckpoint(self, epoch_metrics, model, optimizer):
+    def saveCheckpoint(
+            self, epoch_metrics, model, optimizer, last_discriminator):
         """Saves model when validation loss decrease."""
         if type(model) != list:
             model = [model]
             optimizer = [optimizer]
         models_state_dict = {}
         for i in range(len(model)):
-            models_state_dict[f"model_{i}"] = model[i].state_dict()
+            if i == len(model) - 1 and last_discriminator:
+                torch.save(
+                    model[i].state_dict(),
+                    os.path.join(self.save_directory, "discriminator.pt"))
+            else:
+                torch.save(
+                    model[i].state_dict(),
+                    os.path.join(self.save_directory, f"model_{i}.pt"))
             models_state_dict[f"optimizer_{i}"] = optimizer[i].state_dict()
         torch.save({
             **models_state_dict,
             **epoch_metrics},
-            os.path.join(self.save_directory, "model.pt")
+            os.path.join(self.save_directory, "checkpoint.ckpt")
         )
         if self.verbose:
             print("Validation loss decreased. Model saved")

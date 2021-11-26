@@ -32,12 +32,22 @@ class Basetrainer():
             self.dis_loss = CONFIG.DIS_LOSS
             self.dis_loss_weight = CONFIG.DIS_LOSS_WEIGHT
 
+            # Load discriminator
+            ut.loadModel(
+                self.discriminator, CONFIG.LOAD_GAN, CONFIG.DIS_PATH,
+                "discriminator.pt", self.dis_optimizer,
+                CONFIG.LOAD_DIS_OPTIMIZER_STATE)
+
+        # Load models
+        for i in range(len(CONFIG.MODELS)):
+            self.start_epoch, self.model_directory, validation_loss_min = \
+                ut.loadModel(
+                    self.models[i], CONFIG.LOAD_MODELS[i],
+                    CONFIG.MODEL_PATHS[i], f"model_{i}.pt", self.optimizers[i],
+                    CONFIG.LOAD_OPTIMIZER_STATES[i],
+                    create_new_model_directory=CONFIG.CREATE_NEW_MODEL_DIR)
 
         # Callbacks
-        self.start_epoch, self.model_directory, validation_loss_min = \
-            ut.loadModel(
-                self.models, CONFIG.LOAD_MODEL, CONFIG.MODEL_PATH,
-                self.optimizers)
         self.csv_logger = cb.CsvLogger(self.model_directory)
         self.early_stopping = cb.EarlyStopping(
             self.model_directory, CONFIG.PATIENCE,
@@ -87,8 +97,13 @@ class Basetrainer():
 
     def logData(self):
         self.csv_logger.__call__(self.epoch_metrics)
-        self.early_stopping.__call__(
-            self.epoch_metrics, self.models, self.optimizers)
+        if self.use_gan:
+            self.early_stopping.__call__(
+                self.epoch_metrics, self.models + [self.discriminator],
+                self.optimizers + [self.dis_optimizer], True)
+        else:
+            self.early_stopping.__call__(
+                self.epoch_metrics, self.models, self.optimizers, False)
         for s in self.schedulers:
             s.step(self.epoch_metrics["valid_total-loss"])
         if self.use_gan:
