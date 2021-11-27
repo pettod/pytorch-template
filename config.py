@@ -27,19 +27,6 @@ class CONFIG:
     TEST_IMAGE_PATHS = [
     ]
 
-    # Model loading
-    LOAD_MODEL = False
-    MODEL_PATH = None
-    LOAD_OPTIMIZER_STATE = True
-    CREATE_NEW_MODEL_DIR = True
-
-    # Hyperparameters
-    EPOCHS = 1000
-    BATCH_SIZE = 16
-    PATCH_SIZE = 256
-    PATIENCE = 30
-    ITERATIONS_PER_EPOCH = 1
-
     # Model
     MODELS = [
         Net(),
@@ -83,6 +70,13 @@ class CONFIG:
     LOAD_GAN = False
     DIS_PATH = None
     LOAD_DIS_OPTIMIZER_STATE = False
+
+    # Hyperparameters
+    EPOCHS = 1000
+    BATCH_SIZE = 16
+    PATCH_SIZE = 256
+    PATIENCE = 30
+    ITERATIONS_PER_EPOCH = 10
 
     # Transforms and dataset
     TRAIN_TRANSFORM = Compose([
