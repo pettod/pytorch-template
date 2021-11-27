@@ -171,16 +171,24 @@ class Basetrainer():
                     ut.getProgressbarText(self.epoch_metrics, "Train"), 1)
 
     def testModel(self, epoch):
-        if CONFIG.TEST_IMAGE_PATH is not None:
+        image_directory = "test_images"
+        for test_image_path in CONFIG.TEST_IMAGE_PATHS:
             with torch.no_grad():
-                test_image = self.testAfterEpoch()
-            image_name = os.path.basename(CONFIG.TEST_IMAGE_PATH).split('.')[0]
+                test_image = self.testAfterEpoch(test_image_path)
+            image_name = os.path.basename(test_image_path).split('.')[0]
             save_path = os.path.join(
                 self.model_directory,
-                "test_images",
+                image_directory,
+                image_name,
                 f"epoch_{epoch}_{image_name}.png")
             ut.saveTensorImage(test_image, save_path)
-            self.tensorboard_writer.add_image("test_image", test_image, epoch)
+            save_path = os.path.join(
+                self.model_directory,
+                image_directory,
+                "000000_last_epoch_images",
+                f"{image_name}.png")
+            ut.saveTensorImage(test_image, save_path)
+            self.tensorboard_writer.add_image(image_name, test_image, epoch)
 
     def train(self):
         for epoch in range(self.start_epoch, self.epochs+1):

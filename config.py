@@ -24,7 +24,8 @@ class CONFIG:
     TRAIN_Y_DIR = os.path.join(DATA_ROOT, "train_sharp/")
     VALID_X_DIR = os.path.join(DATA_ROOT, "val_blur/")
     VALID_Y_DIR = os.path.join(DATA_ROOT, "val_sharp/")
-    TEST_IMAGE_PATH = None
+    TEST_IMAGE_PATHS = [
+    ]
 
     # Model loading
     LOAD_MODEL = False

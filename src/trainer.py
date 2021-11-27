@@ -22,7 +22,7 @@ class Trainer(Basetrainer):
         self.optimizers[0].step()
         return prediction, y
 
-    def testAfterEpoch(self):
-        x = Image.open(CONFIG.TEST_IMAGE_PATH).convert("RGB")
+    def testAfterEpoch(self, test_image_path):
+        x = Image.open(test_image_path).convert("RGB")
         x = CONFIG.INPUT_NORMALIZE(CONFIG.TEST_TRANSFORM(x))
         return self.models[0](x.unsqueeze(0)).squeeze(0)
