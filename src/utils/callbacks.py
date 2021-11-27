@@ -98,9 +98,12 @@ class EarlyStopping:
             self.saveCheckpoint(
                 epoch_metrics, model, optimizer, last_discriminator)
             self.counter = 0
+        self.saveCheckpoint(
+            epoch_metrics, model, optimizer, last_discriminator, True)
 
     def saveCheckpoint(
-            self, epoch_metrics, model, optimizer, last_discriminator):
+            self, epoch_metrics, model, optimizer, last_discriminator,
+            save_last_epoch_model=False):
         """Saves model when validation loss decrease."""
         if type(model) != list:
             model = [model]
@@ -108,22 +111,27 @@ class EarlyStopping:
         models_state_dict = {}
         for i in range(len(model)):
             if i == len(model) - 1 and last_discriminator:
-                torch.save(
-                    model[i].state_dict(),
-                    os.path.join(self.save_directory, "discriminator.pt"))
+                model_name = "discriminator.pt"
             else:
-                torch.save(
-                    model[i].state_dict(),
-                    os.path.join(self.save_directory, f"model_{i}.pt"))
+                model_name = f"model_{i}.pt"
+            if save_last_epoch_model:
+                model_name = f"last_epoch_{model_name}"
+            torch.save(
+                model[i].state_dict(),
+                os.path.join(self.save_directory, model_name))
             models_state_dict[f"optimizer_{i}"] = optimizer[i].state_dict()
+        checkpoint_name = "checkpoint.ckpt"
+        if save_last_epoch_model:
+            checkpoint_name = f"last_epoch_{checkpoint_name}"
+        else:
+            if self.verbose:
+                print("Validation loss decreased. Model saved")
+            self.valid_loss_min = epoch_metrics["valid_total-loss"]
         torch.save({
             **models_state_dict,
             **epoch_metrics},
-            os.path.join(self.save_directory, "checkpoint.ckpt")
+            os.path.join(self.save_directory, checkpoint_name)
         )
-        if self.verbose:
-            print("Validation loss decreased. Model saved")
-        self.valid_loss_min = epoch_metrics["valid_total-loss"]
 
     def isEarlyStop(self):
         if self.early_stop:
