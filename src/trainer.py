@@ -9,7 +9,7 @@ class Trainer(Basetrainer):
     def forwardPropagation(self, batch):
         x, y = ut.toDevice(batch)
         prediction = self.models[0](x)
-        loss = self.costFunction(prediction, y)
+        loss = self.costFunction(prediction, y, 0)
         return prediction, y, loss
 
     def validationIteration(self, batch):

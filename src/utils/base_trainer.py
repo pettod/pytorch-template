@@ -60,24 +60,37 @@ class Basetrainer():
         self.number_of_train_batches = ut.getIterations(self.train_dataloader)
         self.number_of_valid_batches = len(self.valid_dataloader)
 
-    def costFunction(self, prediction, y):
+    def costFunction(self, prediction, y, model_index):
         losses = []
-        for l, w in zip(self.loss_functions, self.loss_weights):
+        mi = model_index
+        for l, w in zip(self.loss_functions[mi], self.loss_weights[mi]):
             loss = l(prediction, y) * w
             losses.append(loss)
             if str(type(l)) == "<class 'function'>":
                 loss_name = l.__name__
             else:
                 loss_name = l.__class__.__name__
+
+            # Only last model doesn't have index in the losses
+            if model_index != len(self.models) - 1:
+                loss_name += f"-{model_index}"
             self.iteration_losses[loss_name] = loss
-        if self.use_gan:
+
+        # Use GAN if defined in CONFIG and last model in use
+        if self.use_gan and model_index == len(self.models) - 1:
             self.discriminator.zero_grad()
             gen_dis_prediction = self.discriminator(prediction)
             gen_gan_loss = self.dis_loss(gen_dis_prediction, True)
             losses.append(gen_gan_loss)
             self.iteration_losses["gen-gan-loss"] = gen_gan_loss
         total_loss = sum(losses)
-        self.iteration_losses["total-loss"] = total_loss
+        total_loss_name = "total-loss"
+
+        # Only last model doesn't have index in the losses
+        if model_index != len(self.models) - 1:
+            total_loss_name += f"-{model_index}"
+
+        self.iteration_losses[total_loss_name] = total_loss
         return total_loss
 
     def discriminatorLoss(self, prediction, y):

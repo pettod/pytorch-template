@@ -62,6 +62,14 @@ class CONFIG:
     ]
     CREATE_NEW_MODEL_DIR = True
 
+    # Cost function
+    LOSS_FUNCTIONS = [
+        [l1, sobelLoss],
+    ]
+    LOSS_WEIGHTS = [
+        [1, 1],
+    ]
+
     # GAN
     USE_GAN = False
     DISCRIMINATOR = UNetDiscriminatorSN(3)
@@ -74,10 +82,6 @@ class CONFIG:
     LOAD_GAN = False
     DIS_PATH = None
     LOAD_DIS_OPTIMIZER_STATE = False
-
-    # Cost function
-    LOSS_FUNCTIONS = [l1, sobelLoss]
-    LOSS_WEIGHTS = [1, 1]
 
     # Transforms and dataset
     TRAIN_TRANSFORM = Compose([
