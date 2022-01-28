@@ -27,6 +27,12 @@ def l1(y_pred, y_true):
     return torch.mean(torch.abs(y_true - y_pred))
 
 
+def l1LowRes(y_pred, y_true, downsampling_factor=8):
+    low_pred = nn.AvgPool2d(downsampling_factor)(y_pred)
+    low_true = nn.AvgPool2d(downsampling_factor)(y_true)
+    return l1(low_pred, low_true)
+
+
 class GANLoss(nn.Module):
     """Define GAN loss.
     Args:
