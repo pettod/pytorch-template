@@ -168,9 +168,11 @@ def loadModel(
             full_model_path = [model_path]
         return full_model_path[0]
 
-    print("{:,} model ({}) parameters".format(
-        sum(p.numel() for p in model.parameters() if p.requires_grad),
-        model_file_name.split('.')[0]))
+    def printModelDetails():
+        print("{:,} model ({}) parameters".format(
+            sum(p.numel() for p in model.parameters() if p.requires_grad),
+            model_file_name.split('.')[0]))
+
     validation_loss_min = np.Inf
     start_epoch = 1
     model_directory = os.path.join(
@@ -180,6 +182,8 @@ def loadModel(
 
     if load_pretrained_weights:
         full_model_path = loadModelPath()
+        model_file_name = os.path.basename(full_model_path)
+        printModelDetails()
         old_model_directory = os.path.dirname(full_model_path)
         model.load_state_dict(torch.load(full_model_path))
         model.eval()
@@ -198,6 +202,7 @@ def loadModel(
         if not create_new_model_directory:
             model_directory = old_model_directory
     else:
+        printModelDetails()
         print("Not loaded pretrained weights")
     print()
 
