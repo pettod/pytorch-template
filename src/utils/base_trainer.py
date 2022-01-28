@@ -109,7 +109,6 @@ class Basetrainer():
         self.iteration_losses["dis-gan-loss"] = dis_gan_loss
 
     def logData(self):
-        self.csv_logger.__call__(self.epoch_metrics)
         if self.use_gan:
             self.early_stopping.__call__(
                 self.epoch_metrics, self.models + [self.discriminator],
@@ -121,6 +120,7 @@ class Basetrainer():
             s.step(self.epoch_metrics["valid_total-loss"])
         if self.use_gan:
             self.dis_scheduler.step(self.epoch_metrics["valid_dis-gan-loss"])
+        self.csv_logger.__call__(self.epoch_metrics)
         ut.saveLearningCurve(model_directory=self.model_directory)
 
         # Update Tensorboard

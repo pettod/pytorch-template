@@ -7,12 +7,6 @@ import pandas as pd
 import torch
 
 
-def createSaveModelDirectory(save_directory):
-    # Create folders if do not exist
-    if not os.path.isdir(save_directory):
-        os.makedirs(save_directory)
-
-
 class EarlyStopping:
     """
     Early stops the training if validation loss doesn't improve after a 
@@ -63,9 +57,15 @@ class EarlyStopping:
             else:
                 copy(file_path, code_file_save_folder)
 
+    def createSaveModelDirectory(self):
+        # Create folders if do not exist
+        if not os.path.isdir(self.save_directory):
+            os.makedirs(self.save_directory)
+            self.moveNetworkConfigToSaveDirectory()
+
     def moveNetworkConfigToSaveDirectory(self):
         # 'tmp/' folder exists but save directory doesn't
-        if os.path.isdir(self.tmp_folder) and not os.path.isdir(self.save_directory):
+        if os.path.isdir(self.tmp_folder):
 
             # Loop each file in 'tmp/' folder
             for file_path in glob(os.path.join(self.tmp_folder, '*')):
@@ -80,8 +80,7 @@ class EarlyStopping:
 
     def __call__(
             self, epoch_metrics, model, optimizer, last_discriminator=False):
-        createSaveModelDirectory(self.save_directory)
-        self.moveNetworkConfigToSaveDirectory()
+        self.createSaveModelDirectory()
         valid_loss = epoch_metrics["valid_total-loss"]
         score = -valid_loss
         if self.best_score is None:
@@ -139,14 +138,11 @@ class EarlyStopping:
         return self.early_stop
 
 
-class CsvLogger:
+class CsvLogger():
     def __init__(self, save_model_directory):
-        self.save_directory = save_model_directory
-        self.logs_file_path = os.path.join(self.save_directory, "logs.csv")
+        self.logs_file_path = os.path.join(save_model_directory, "logs.csv")
 
     def __call__(self, loss_and_metrics):
-        createSaveModelDirectory(self.save_directory)
-
         # Create CSV file
         new_data_frame = pd.DataFrame(loss_and_metrics, index=[0])
         if not os.path.isfile(self.logs_file_path):
