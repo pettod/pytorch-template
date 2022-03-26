@@ -17,9 +17,9 @@ def readImage(image_path, transform, seed):
 
 
 def readImagePaths(data_path):
-    if data_path is not None:
-        return np.array(sorted(glob(f"{data_path}/*/*.png")))
-    return data_path
+    if data_path is None or type(data_path) == list:
+        return data_path
+    return np.array(sorted(glob(f"{data_path}/*/*.png")))
 
 
 class ImageDataset(Dataset):
