@@ -16,17 +16,14 @@ class Basetrainer():
 
         # Load from config
         self.epochs = CONFIG.EPOCHS
-        self.models = [
-            nn.DataParallel(m).to(CONFIG.DEVICE) for m in CONFIG.MODELS]
+        self.models = [m.to(CONFIG.DEVICE) for m in CONFIG.MODELS]
         self.optimizers = CONFIG.OPTIMIZERS
         self.schedulers = CONFIG.SCHEDULERS
         self.loss_functions = CONFIG.LOSS_FUNCTIONS
         self.loss_weights = CONFIG.LOSS_WEIGHTS
         self.use_gan = CONFIG.USE_GAN
         if self.use_gan:
-            self.discriminator = nn.DataParallel(
-                CONFIG.DISCRIMINATOR).to(CONFIG.DEVICE)
-            self.discriminator = CONFIG.DISCRIMINATOR
+            self.discriminator = CONFIG.DISCRIMINATOR.to(CONFIG.DEVICE)
             self.dis_optimizer = CONFIG.DIS_OPTIMIZER
             self.dis_scheduler = CONFIG.DIS_SCHEDULER
             self.dis_loss = CONFIG.DIS_LOSS
@@ -37,6 +34,7 @@ class Basetrainer():
                 self.discriminator, CONFIG.LOAD_GAN, CONFIG.DIS_PATH,
                 "discriminator.pt", self.dis_optimizer,
                 CONFIG.LOAD_DIS_OPTIMIZER_STATE)
+            self.discriminator = nn.DataParallel(self.discriminator)
 
         # Load models
         for i in range(len(CONFIG.MODELS)):
@@ -46,6 +44,7 @@ class Basetrainer():
                     CONFIG.MODEL_PATHS[i], f"model_{i}.pt", self.optimizers[i],
                     CONFIG.LOAD_OPTIMIZER_STATES[i],
                     create_new_model_directory=CONFIG.CREATE_NEW_MODEL_DIR)
+            self.models[i] = nn.DataParallel(self.models[i])
 
         # Callbacks
         self.csv_logger = cb.CsvLogger(self.model_directory)

@@ -5,6 +5,7 @@ from shutil import copy, move, rmtree
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
 
 
 class EarlyStopping:
@@ -115,8 +116,12 @@ class EarlyStopping:
                 model_name = f"model_{i}.pt"
             if save_last_epoch_model:
                 model_name = f"last_epoch_{model_name}"
+            if type(model[i]) == nn.DataParallel:
+                saved_model = model[i].module
+            else:
+                saved_model = model[i]
             torch.save(
-                model[i].state_dict(),
+                saved_model.state_dict(),
                 os.path.join(self.save_directory, model_name))
             models_state_dict[f"optimizer_{i}"] = optimizer[i].state_dict()
         checkpoint_name = "checkpoint.ckpt"

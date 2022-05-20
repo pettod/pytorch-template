@@ -49,7 +49,7 @@ def test(model):
 
 
 def main():
-    model = nn.DataParallel(CONFIG.MODELS[0]).cuda()
+    model = CONFIG.MODELS[0].cuda()
     modules = model.named_modules()
     pruned_parameters = []
     for m in modules:

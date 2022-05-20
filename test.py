@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # Project files
-from src.dataset import ImageDataset
+from src.dataset import ImageDataset as Dataset
 from src.utils.utils import loadModel
 
 # Data paths
@@ -21,8 +21,8 @@ Y_DIR = os.path.join(DATA_ROOT, "valid_sharp")
 
 # Model parameters
 MODEL_PATHS = [
-    "saved_models/2022-01-28_180347",
-    "saved_models/2022-01-28_180347",
+    "saved_models/2022-05-20_212932",
+    "saved_models/2022-05-20_212932",
 ]
 NAMES = [
     "Input",
@@ -31,7 +31,7 @@ NAMES = [
     "Ground truth",
 ]
 PATCH_SIZE = 256
-DEVICE = torch.device("cuda")
+DEVICE = torch.device("cpu")
 
 
 def loadModels():
@@ -39,7 +39,7 @@ def loadModels():
     for model_path in MODEL_PATHS:
         config = import_module(os.path.join(
             model_path, "codes.config").replace('/', '.')).CONFIG
-        model = nn.DataParallel(config.MODELS[0]).to(DEVICE)
+        model = config.MODELS[0].to(DEVICE)
         loadModel(model, model_path=model_path)
         models.append(model)
     return models
@@ -47,9 +47,7 @@ def loadModels():
 
 def saveImage(save_directory, image, image_name):
     os.makedirs(save_directory, exist_ok=True)
-    cv2.imwrite(os.path.join(
-        save_directory, image_name), cv2.cvtColor(
-            image, cv2.COLOR_RGB2BGR))
+    cv2.imwrite(os.path.join(save_directory, image_name), image[..., ::-1])
 
 
 def main():
@@ -59,7 +57,7 @@ def main():
         ToTensor(),
     ])
     input_normalize = Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-    dataset = ImageDataset(X_DIR, Y_DIR, transforms, input_normalize)
+    dataset = Dataset(X_DIR, Y_DIR, transforms, input_normalize)
     dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=8)
 
     # Save directory
