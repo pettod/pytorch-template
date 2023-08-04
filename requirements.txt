@@ -8,3 +8,4 @@ piq
 tensorboard
 torch-tb-profiler
 tqdm
+optuna
