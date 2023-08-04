@@ -6,7 +6,7 @@ from config import CONFIG
 from src.trainer import Trainer
 from src.architectures.model import Net
 from flops import flops
-from src.utils.utils import seed_everything
+from src.utils.utils import seedEverything
 
 
 class Objective:
@@ -27,7 +27,7 @@ class Objective:
             float: R^2 score of model on validation set
         """
         seed = trial.suggest_int("seed", 1, 2**32 - 1)
-        seed_everything(seed)
+        seedEverything(seed)
 
         kwargs={
             #"loss_name": trial.suggest_categorical("loss_name", ["mae", "mse"]),
