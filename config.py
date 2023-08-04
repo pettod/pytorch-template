@@ -28,6 +28,7 @@ class CONFIG:
     ]
 
     # Model
+    SEED = 5432367
     MODELS = [
         Net(),
     ]
