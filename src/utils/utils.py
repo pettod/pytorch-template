@@ -240,3 +240,13 @@ def saveTensorImage(image, save_path):
     save_directory = os.path.dirname(save_path)
     os.makedirs(save_directory, exist_ok=True)
     cv2.imwrite(save_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+
+
+def seedEverything(seed: int):
+    random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
