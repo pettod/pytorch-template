@@ -43,8 +43,14 @@ conda install pytorch torchvision
 pip install -r requirements.txt
 ```
 
-## Run Training
+## Train
 
 ```bash
 python train.py
+```
+
+## Optimize
+
+```bash
+python optimize.py
 ```
