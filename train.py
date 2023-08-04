@@ -3,6 +3,7 @@ import optuna
 from config import CONFIG
 from src.optunaobjective import Objective
 from src.trainer import Trainer
+from sr.utils.utils import seedEverything
 
 
 TRAINING_PARAMETERS = [
@@ -16,6 +17,8 @@ def main():
         obj = Objective()
         obj(optuna.trial.FixedTrial(USED_PARAMETERS), save_model=True)
     else:
+        if CONFIG.SEED:
+            seedEverything(CONFIG.SEED)
         trainer = Trainer(CONFIG)
         trainer.train()
 
