@@ -4,6 +4,7 @@
 *.png
 *.pt
 *.pyc
+*.DS_Store
 
 # Folders
 .vscode/*

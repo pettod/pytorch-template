@@ -2,6 +2,7 @@ import cv2
 import os
 import sys
 import time
+import random
 from glob import glob
 from inspect import getmembers, isfunction
 from math import ceil, sqrt

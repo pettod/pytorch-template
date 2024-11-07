@@ -4,58 +4,57 @@ import torch.nn as nn
 from tqdm import trange
 from torch.utils.tensorboard import SummaryWriter
 
-from config import CONFIG
 import src.utils.callbacks as cb
 import src.utils.utils as ut
 
 
 class Basetrainer():
-    def __init__(self, train_dataset, valid_dataset):
+    def __init__(self, config):
         self.epoch_metrics = {}
         self.iteration_losses = {}
 
         # Load from config
-        self.epochs = CONFIG.EPOCHS
-        self.models = [m.to(CONFIG.DEVICE) for m in CONFIG.MODELS]
-        self.optimizers = CONFIG.OPTIMIZERS
-        self.schedulers = CONFIG.SCHEDULERS
-        self.loss_functions = CONFIG.LOSS_FUNCTIONS
-        self.loss_weights = CONFIG.LOSS_WEIGHTS
-        self.use_gan = CONFIG.USE_GAN
+        self.epochs = config.EPOCHS
+        self.models = [m.to(config.DEVICE) for m in config.MODELS]
+        self.optimizers = config.OPTIMIZERS
+        self.schedulers = config.SCHEDULERS
+        self.loss_functions = config.LOSS_FUNCTIONS
+        self.loss_weights = config.LOSS_WEIGHTS
+        self.use_gan = config.USE_GAN
         if self.use_gan:
-            self.discriminator = CONFIG.DISCRIMINATOR.to(CONFIG.DEVICE)
-            self.dis_optimizer = CONFIG.DIS_OPTIMIZER
-            self.dis_scheduler = CONFIG.DIS_SCHEDULER
-            self.dis_loss = CONFIG.DIS_LOSS
-            self.dis_loss_weight = CONFIG.DIS_LOSS_WEIGHT
+            self.discriminator = config.DISCRIMINATOR.to(config.DEVICE)
+            self.dis_optimizer = config.DIS_OPTIMIZER
+            self.dis_scheduler = config.DIS_SCHEDULER
+            self.dis_loss = config.DIS_LOSS
+            self.dis_loss_weight = config.DIS_LOSS_WEIGHT
 
             # Load discriminator
             ut.loadModel(
-                self.discriminator, CONFIG.LOAD_GAN, CONFIG.DIS_PATH,
+                self.discriminator, config.LOAD_GAN, config.DIS_PATH,
                 "discriminator.pt", self.dis_optimizer,
-                CONFIG.LOAD_DIS_OPTIMIZER_STATE)
+                config.LOAD_DIS_OPTIMIZER_STATE)
             self.discriminator = nn.DataParallel(self.discriminator)
 
         # Load models
-        for i in range(len(CONFIG.MODELS)):
+        for i in range(len(config.MODELS)):
             self.start_epoch, self.model_directory, validation_loss_min = \
                 ut.loadModel(
-                    self.models[i], CONFIG.LOAD_MODELS[i],
-                    CONFIG.MODEL_PATHS[i], f"model_{i}.pt", self.optimizers[i],
-                    CONFIG.LOAD_OPTIMIZER_STATES[i],
-                    create_new_model_directory=CONFIG.CREATE_NEW_MODEL_DIR)
+                    self.models[i], config.LOAD_MODELS[i],
+                    config.MODEL_PATHS[i], f"model_{i}.pt", self.optimizers[i],
+                    config.LOAD_OPTIMIZER_STATES[i],
+                    create_new_model_directory=config.CREATE_NEW_MODEL_DIR)
             self.models[i] = nn.DataParallel(self.models[i])
 
         # Callbacks
         self.csv_logger = cb.CsvLogger(self.model_directory)
         self.early_stopping = cb.EarlyStopping(
-            self.model_directory, CONFIG.PATIENCE,
+            self.model_directory, config.PATIENCE,
             validation_loss_min=validation_loss_min)
         self.tensorboard_writer = None
 
         # Train and validation batch generators
-        self.train_dataloader = ut.getDataloader(train_dataset)
-        self.valid_dataloader = ut.getDataloader(valid_dataset, shuffle=False)
+        self.train_dataloader = ut.getDataloader(config.TRAIN_DATASET)
+        self.valid_dataloader = ut.getDataloader(config.VALID_DATASET, shuffle=False)
         self.number_of_train_batches = ut.getIterations(self.train_dataloader)
         self.number_of_valid_batches = len(self.valid_dataloader)
 
@@ -75,7 +74,7 @@ class Basetrainer():
                 loss_name += f"-{model_index}"
             self.iteration_losses[loss_name] = loss
 
-        # Use GAN if defined in CONFIG and last model in use
+        # Use GAN if defined in config and last model in use
         if self.use_gan and model_index == len(self.models) - 1:
             self.discriminator.zero_grad()
             gen_dis_prediction = self.discriminator(prediction)
@@ -171,7 +170,7 @@ class Basetrainer():
 
     def testModel(self, epoch):
         image_directory = "test_images"
-        for test_image_path in CONFIG.TEST_IMAGE_PATHS:
+        for test_image_path in config.TEST_IMAGE_PATHS:
             with torch.no_grad():
                 test_image = self.testAfterEpoch(test_image_path)
             image_name = os.path.basename(test_image_path).split('.')[0]

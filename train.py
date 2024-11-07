@@ -1,9 +1,9 @@
 import optuna
 
 from config import CONFIG
-from src.optunaobjective import Objective
+from src.optuna_objective import Objective
 from src.trainer import Trainer
-from sr.utils.utils import seedEverything
+from src.utils.utils import seedEverything
 
 
 TRAINING_PARAMETERS = [
