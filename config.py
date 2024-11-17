@@ -98,4 +98,4 @@ class CONFIG:
     # General parameters
     DROP_LAST_BATCH = False
     NUMBER_OF_DATALOADER_WORKERS = cpu_count()
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
