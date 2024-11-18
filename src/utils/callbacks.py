@@ -43,6 +43,7 @@ class EarlyStopping:
         self.saved_files = [
             "config.py",
             "src/architectures",
+            "src/dataset.py",
             "src/loss_functions.py",
         ]
         self.saveNetworkConfig()
