@@ -39,9 +39,9 @@ def loadModels():
     for model_path in MODEL_PATHS:
         config = import_module(os.path.join(
             model_path, "codes.config").replace('/', '.')).CONFIG
-        model = config.MODELS[0].to(DEVICE)
+        model = config.MODELS[0]
         loadModel(model, model_path=model_path)
-        models.append(model)
+        models.append(model.to(DEVICE))
     return models
 
 

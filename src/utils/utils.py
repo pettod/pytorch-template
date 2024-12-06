@@ -186,7 +186,7 @@ def loadModel(
         model_file_name = os.path.basename(full_model_path)
         printModelDetails()
         old_model_directory = os.path.dirname(full_model_path)
-        model.load_state_dict(torch.load(full_model_path))
+        model.load_state_dict(torch.load(full_model_path, map_location=torch.device("cpu")))
         model.eval()
         print("Loaded pretrained weights: {}".format(full_model_path))
         if optimizer and load_optimizer_state:
