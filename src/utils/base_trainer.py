@@ -21,6 +21,7 @@ class Basetrainer():
         self.loss_functions = config.LOSS_FUNCTIONS
         self.loss_weights = config.LOSS_WEIGHTS
         self.use_gan = config.USE_GAN
+        self.test_sample_paths = config.TEST_SAMPLE_PATHS
         if self.use_gan:
             self.discriminator = config.DISCRIMINATOR.to(config.DEVICE)
             self.dis_optimizer = config.DIS_OPTIMIZER
@@ -170,7 +171,7 @@ class Basetrainer():
 
     def testModel(self, epoch):
         image_directory = "test_images"
-        for test_image_path in config.TEST_IMAGE_PATHS:
+        for test_image_path in self.test_sample_paths:
             with torch.no_grad():
                 test_image = self.testAfterEpoch(test_image_path)
             image_name = os.path.basename(test_image_path).split('.')[0]

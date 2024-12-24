@@ -87,7 +87,7 @@ def saveLearningCurve(
     log_data = {}
     for column in log_file:
         if column == "epoch":
-            log_data[column] = np.array(log_file[column].values, dtype=np.str)
+            log_data[column] = np.array(log_file[column].values, dtype=np.str_)
         elif "learning_rate" in column:
             continue
         else:
